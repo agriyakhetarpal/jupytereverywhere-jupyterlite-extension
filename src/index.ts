@@ -135,20 +135,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
             const { notebookName, password } = result.value as IShareDialogData;
 
             try {
-              // Show loading indicator
-              // TODO: this doesn't show up in the dialog properly, we could
-              // even remove it as loading doesn't take long at all
-              const loadingIndicator = document.createElement('div');
-              loadingIndicator.textContent = 'Sharing notebook...';
-              loadingIndicator.style.position = 'fixed';
-              loadingIndicator.style.bottom = '20px';
-              loadingIndicator.style.right = '20px';
-              loadingIndicator.style.padding = '10px';
-              loadingIndicator.style.backgroundColor = '#f0f0f0';
-              loadingIndicator.style.borderRadius = '5px';
-              loadingIndicator.style.zIndex = '1000';
-              document.body.appendChild(loadingIndicator);
-
               await sharingService.authenticate();
 
               let shareResponse;
@@ -178,9 +164,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
                 const id = shareResponse.notebook.readable_id || shareResponse.notebook.id;
                 shareableLink = sharingService.makeRetrieveURL(id).toString();
               }
-
-              // Remove loading indicator
-              document.body.removeChild(loadingIndicator);
 
               if (shareableLink) {
                 const dialogResult = await showDialog({
