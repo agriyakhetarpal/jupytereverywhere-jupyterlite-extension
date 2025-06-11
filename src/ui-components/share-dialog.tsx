@@ -7,31 +7,19 @@ import React from 'react';
  */
 export interface IShareDialogData {
   notebookName: string;
-  password: string;
+  password?: string;
 }
 
 /**
  * Share dialog widget for notebook sharing preferences (name, view-only, and a password if applicable).
  */
-const ShareDialogComponent = () => {
+const ShareDialogComponent: React.FC = () => {
   const generateDefaultName = () => {
     const today = new Date();
     return `Notebook_${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
   };
 
-  // Generate random password
-  // TODO: get this from the sharing service API later on
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
   const [notebookName, setNotebookName] = React.useState<string>(generateDefaultName());
-  const [password] = React.useState<string>(generatePassword());
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNotebookName(e.target.value);
@@ -52,24 +40,6 @@ const ShareDialogComponent = () => {
         }}
         required
       />
-
-      <div style={{ marginBottom: '15px' }}>
-        <label htmlFor="password">
-          Here's the code required to edit the original notebook. Make sure to save this code as it
-          will not appear again:
-        </label>
-        <div
-          id="password"
-          style={{
-            width: '100%',
-            padding: '5px',
-            fontFamily: 'monospace',
-            fontSize: '14px'
-          }}
-        >
-          {password}
-        </div>
-      </div>
     </div>
   );
 };
@@ -87,20 +57,9 @@ export class ShareDialog extends ReactWidget {
   getValue(): IShareDialogData {
     // Get current values from the DOM
     const nameInput = this.node.querySelector('#notebook-name') as HTMLInputElement;
-    const passwordDiv = this.node.querySelector('#password') as HTMLDivElement;
 
-    if (nameInput && passwordDiv && passwordDiv.textContent) {
-      return {
-        notebookName: nameInput.value,
-        password: passwordDiv.textContent
-      };
-    }
-
-    // Fallback to stored values
     return {
-      notebookName: this._notebookName,
-      password: '' // This shouldn't really happen since the component always renders a password
-    };
+      notebookName: nameInput?.value || this._notebookName,    };
   }
 
   render() {
@@ -108,52 +67,98 @@ export class ShareDialog extends ReactWidget {
   }
 }
 
-// TODO: not used until the shareable link works
+/**
+ * Success dialog, shows password only when isNewShare is true.
+ */
 export const createSuccessDialog = (
   shareableLink: string,
   isNewShare: boolean,
-  isViewOnly: boolean
+  isViewOnly: boolean,
+  password?: string
 ) => {
   return (
-    <div>
-      <p style={{ fontSize: '1.2em', marginBottom: '15px' }}>
-        {isNewShare ? 'Your notebook is now shared!' : 'Your notebook has been updated!'} Use this
-        link to access it:
-      </p>
-
-      <div
+    <div
+      style={{
+        fontFamily: 'Arial, sans-serif',
+        padding: '20px',
+        maxWidth: '500px'
+      }}
+    >
+      <h3
         style={{
-          textAlign: 'center',
-          margin: '15px 0',
-          padding: '10px',
-          background: '#f5f5f5',
-          borderRadius: '4px'
+          color: '#663399',
+          fontSize: '18px',
+          marginBottom: '15px',
+          textAlign: 'center'
         }}
       >
-        <a
-          href={shareableLink}
-          target="_blank"
-          rel="noopener noreferrer"
+        {isNewShare
+          ? 'Here is the shareable link to your new copy:'
+          : 'Here is the shareable link to your notebook:'}
+      </h3>
+      <div
+        style={{
+          backgroundColor: '#f0f0f0',
+          padding: '10px',
+          borderRadius: '5px',
+          marginBottom: '20px',
+          textAlign: 'center'
+        }}
+      >
+        <span
           style={{
-            fontSize: '1.1em',
-            color: '#007bff',
-            textDecoration: 'underline',
+            color: '#888',
+            fontSize: '14px',
             wordBreak: 'break-all'
           }}
         >
-          {shareableLink}
-        </a>
+          &lt;link&gt;
+        </span>
       </div>
 
-      {isViewOnly && (
-        <p style={{ marginTop: '15px' }}>
-          <strong>Note:</strong> This notebook is password-protected.
-        </p>
+      {isNewShare && password && (
+        <>
+          <p
+            style={{
+              color: '#663399',
+              fontSize: '16px',
+              marginBottom: '10px',
+              textAlign: 'center'
+            }}
+          >
+            Here's the code required to edit the original notebook. Make sure to save this code as
+            it will not appear again:
+          </p>
+
+          <div
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: '10px',
+              borderRadius: '5px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}
+          >
+            <span
+              style={{
+                color: '#888',
+                fontSize: '14px',
+                fontFamily: 'monospace'
+              }}
+            >
+              &lt;password&gt;
+            </span>
+          </div>
+        </>
       )}
     </div>
   );
 };
 
+/**
+ * An error dialog for sharing failures.
+ * Displays a generic error message.
+ */
 export const createErrorDialog = (error: unknown) => {
   return (
     <div>
