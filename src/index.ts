@@ -81,24 +81,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const isAlreadyShared =
         notebookContent.metadata &&
         typeof notebookContent.metadata === 'object' &&
-        'sharedId' in notebookContent.metadata &&
-        'sharedPassword' in notebookContent.metadata;
+        'sharedId' in notebookContent.metadata;
 
       if (isAlreadyShared && !isManualShare) {
         try {
           const sharedId = notebookContent.metadata.sharedId as string;
-          const sharedPassword = notebookContent.metadata.sharedPassword as string;
-
-          console.log('Updating notebook:', sharedId); // debug
+          console.log('Updating notebook:', sharedId);
 
           await sharingService.authenticate();
-          await sharingService.update(sharedId, notebookContent, sharedPassword);
+          await sharingService.update(sharedId, notebookContent);
 
           console.log('Notebook automatically synced to CKHub');
         } catch (error) {
-          console.warn('Failed to sync notebook to CKHub:', error); // debug
+          console.warn('Failed to sync notebook to CKHub:', error);
           await showDialog({
-            // title: 'Sync failed',
+            title: 'Sync Failed',
             body: ReactWidget.create(createErrorDialog(error)),
             buttons: [Dialog.okButton()]
           });
@@ -107,7 +104,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }
 
       if (!isAlreadyShared && !isManualShare) {
-        // First save - create share and show password
+        // First save/share; displays a shareable link and shows a password in a dialog
         const password = generatePassword();
         const defaultName = `Notebook_${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}`;
 
@@ -116,7 +113,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const shareResponse = await sharingService.share(notebookContent, password);
 
           if (shareResponse && shareResponse.notebook) {
-            // Update metadata
             if (!notebookContent.metadata) {
               notebookContent.metadata = {};
             }
@@ -125,19 +121,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
             notebookContent.metadata.readableId = shareResponse.notebook.readable_id;
             notebookContent.metadata.sharedName = defaultName;
             notebookContent.metadata.isPasswordProtected = true;
-            notebookContent.metadata.sharedPassword = password;
             notebookContent.metadata.lastShared = new Date().toISOString();
 
             notebookPanel.context.model.fromJSON(notebookContent);
             await notebookPanel.context.save();
 
-            // Show success dialog with password (first time only)
             const shareableLink = sharingService
               .makeRetrieveURL(shareResponse.notebook.readable_id || shareResponse.notebook.id)
               .toString();
 
             const dialogResult = await showDialog({
-              // title: 'Notebook shared',
+              title: '',
               body: ReactWidget.create(createSuccessDialog(shareableLink, true, true, password)),
               buttons: [
                 Dialog.okButton({ label: 'Done' }),
@@ -164,13 +158,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }
 
       if (isManualShare) {
-        // Manual share button pressed - show link only (no password)
+        // Manual share button pressed - show actual link (no password)
         const readableId = notebookContent.metadata.readableId as string;
         const sharedId = notebookContent.metadata.sharedId as string;
         const shareableLink = sharingService.makeRetrieveURL(readableId || sharedId).toString();
 
         const dialogResult = await showDialog({
-          // title: 'Here is the shareable link to your notebook:',
+          title: '',
           body: ReactWidget.create(createSuccessDialog(shareableLink, false, true)),
           buttons: [
             Dialog.okButton({ label: 'Copy Link!' }),
@@ -189,7 +183,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     }
 
     /**
-     * We override the default save command to use CKHub instead of Jupyter's saving.
+     * Hook into notebook saves using the saveState signal to handle CKHub sharing
      */
     tracker.widgetAdded.connect((sender, widget) => {
       widget.context.saveState.connect(async (sender, saveState) => {
@@ -253,7 +247,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           const notebookContent = notebookPanel.context.model.toJSON() as INotebookContent;
 
-          // Check if notebook has already been shared; access metadata using notebook content
+          // Check if notebook has already been shared
           let notebookId: string | undefined;
           if (
             notebookContent.metadata &&
@@ -266,6 +260,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const isNewShare = !notebookId;
 
           if (isNewShare) {
+            // First time sharing - show dialog to get notebook name
             const result = await showDialog({
               title: 'Share Notebook',
               body: new ShareDialog(),
@@ -281,8 +276,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
                 const shareResponse = await sharingService.share(notebookContent, password);
 
                 if (shareResponse && shareResponse.notebook) {
-                  // We need to update the metadata in the notebookContent first
-                  // to do this, and we need to ensure that the metadata object exists
                   if (!notebookContent.metadata) {
                     notebookContent.metadata = {};
                   }
@@ -291,7 +284,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
                   notebookContent.metadata.readableId = shareResponse.notebook.readable_id;
                   notebookContent.metadata.sharedName = notebookName;
                   notebookContent.metadata.isPasswordProtected = true;
-                  notebookContent.metadata.sharedPassword = password;
 
                   notebookPanel.context.model.fromJSON(notebookContent);
                   await notebookPanel.context.save();
@@ -305,7 +297,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
                 if (shareableLink) {
                   const dialogResult = await showDialog({
-                    // title: 'Notebook shared',
+                    title: '',
                     body: ReactWidget.create(
                       createSuccessDialog(shareableLink, true, true, password)
                     ),
@@ -332,8 +324,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
               }
             }
           } else {
-            // Already shared; just show the link (no password)
-            // as we don't want to expose the password again.
+            // Already shared - just show the link (no password, no name dialog)
             await handleNotebookSave(notebookPanel, true);
           }
         } catch (error) {

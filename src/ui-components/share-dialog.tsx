@@ -59,7 +59,8 @@ export class ShareDialog extends ReactWidget {
     const nameInput = this.node.querySelector('#notebook-name') as HTMLInputElement;
 
     return {
-      notebookName: nameInput?.value || this._notebookName,    };
+      notebookName: nameInput?.value || this._notebookName
+    };
   }
 
   render() {
@@ -68,7 +69,8 @@ export class ShareDialog extends ReactWidget {
 }
 
 /**
- * Success dialog, shows password only when isNewShare is true.
+ * Success dialog - shows actual URLs and passwords, minimal styling
+ * Shows password only when isNewShare is true.
  */
 export const createSuccessDialog = (
   shareableLink: string,
@@ -77,77 +79,39 @@ export const createSuccessDialog = (
   password?: string
 ) => {
   return (
-    <div
-      style={{
-        fontFamily: 'Arial, sans-serif',
-        padding: '20px',
-        maxWidth: '500px'
-      }}
-    >
-      <h3
-        style={{
-          color: '#663399',
-          fontSize: '18px',
-          marginBottom: '15px',
-          textAlign: 'center'
-        }}
-      >
+    <div>
+      <h3>
         {isNewShare
           ? 'Here is the shareable link to your new copy:'
           : 'Here is the shareable link to your notebook:'}
       </h3>
-      <div
-        style={{
-          backgroundColor: '#f0f0f0',
-          padding: '10px',
-          borderRadius: '5px',
-          marginBottom: '20px',
-          textAlign: 'center'
-        }}
-      >
-        <span
-          style={{
-            color: '#888',
-            fontSize: '14px',
-            wordBreak: 'break-all'
-          }}
-        >
-          &lt;link&gt;
-        </span>
+
+      <div style={{
+        backgroundColor: '#f0f0f0',
+        padding: '10px',
+        borderRadius: '5px',
+        marginBottom: '20px',
+        wordBreak: 'break-all',
+        fontFamily: 'monospace'
+      }}>
+        {shareableLink}
       </div>
 
       {isNewShare && password && (
         <>
-          <p
-            style={{
-              color: '#663399',
-              fontSize: '16px',
-              marginBottom: '10px',
-              textAlign: 'center'
-            }}
-          >
-            Here's the code required to edit the original notebook. Make sure to save this code as
-            it will not appear again:
+          <p>
+            Here's the code required to edit the original notebook. Make sure to save this code as it will not appear again:
           </p>
-
-          <div
-            style={{
-              backgroundColor: '#f0f0f0',
-              padding: '10px',
-              borderRadius: '5px',
-              marginBottom: '20px',
-              textAlign: 'center'
-            }}
-          >
-            <span
-              style={{
-                color: '#888',
-                fontSize: '14px',
-                fontFamily: 'monospace'
-              }}
-            >
-              &lt;password&gt;
-            </span>
+          <div style={{
+            backgroundColor: '#f0f0f0',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '20px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            letterSpacing: '1px'
+          }}>
+            {password}
           </div>
         </>
       )}
