@@ -127,7 +127,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
             await notebookPanel.context.save();
 
             const shareableLink = sharingService
-              .makeRetrieveURL(shareResponse.notebook.readable_id || shareResponse.notebook.id)
+              .makeRetrieveURL(shareResponse.notebook.id)
               .toString();
 
             const dialogResult = await showDialog({
