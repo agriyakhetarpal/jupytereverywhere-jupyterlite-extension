@@ -86,31 +86,36 @@ export const createSuccessDialog = (
           : 'Here is the shareable link to your notebook:'}
       </h3>
 
-      <div style={{
-        backgroundColor: '#f0f0f0',
-        padding: '10px',
-        borderRadius: '5px',
-        marginBottom: '20px',
-        wordBreak: 'break-all',
-        fontFamily: 'monospace'
-      }}>
+      <div
+        style={{
+          backgroundColor: '#f0f0f0',
+          padding: '10px',
+          borderRadius: '5px',
+          marginBottom: '20px',
+          wordBreak: 'break-all',
+          fontFamily: 'monospace'
+        }}
+      >
         {shareableLink}
       </div>
 
       {isNewShare && password && (
         <>
           <p>
-            Here's the code required to edit the original notebook. Make sure to save this code as it will not appear again:
+            Here's the code required to edit the original notebook. Make sure to save this code as
+            it will not appear again:
           </p>
-          <div style={{
-            backgroundColor: '#f0f0f0',
-            padding: '10px',
-            borderRadius: '5px',
-            marginBottom: '20px',
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            letterSpacing: '1px'
-          }}>
+          <div
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: '10px',
+              borderRadius: '5px',
+              marginBottom: '20px',
+              fontFamily: 'monospace',
+              fontSize: '14px',
+              letterSpacing: '1px'
+            }}
+          >
             {password}
           </div>
         </>
