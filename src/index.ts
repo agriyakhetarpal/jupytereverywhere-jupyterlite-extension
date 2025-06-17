@@ -88,7 +88,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const sharedId = notebookContent.metadata.sharedId as string;
           console.log('Updating notebook:', sharedId);
 
-          await sharingService.authenticate();
+          await sharingService.token;
           await sharingService.update(sharedId, notebookContent);
 
           console.log('Notebook automatically synced to CKHub');
@@ -109,7 +109,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         const defaultName = `Notebook_${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}`;
 
         try {
-          await sharingService.authenticate();
+          await sharingService.token;
           const shareResponse = await sharingService.share(notebookContent, password);
 
           if (shareResponse && shareResponse.notebook) {
@@ -272,7 +272,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
               const password = generatePassword();
 
               try {
-                await sharingService.authenticate();
+                await sharingService.token;
                 const shareResponse = await sharingService.share(notebookContent, password);
 
                 if (shareResponse && shareResponse.notebook) {
