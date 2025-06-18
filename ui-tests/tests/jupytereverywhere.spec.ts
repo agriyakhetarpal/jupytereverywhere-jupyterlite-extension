@@ -58,7 +58,7 @@ test.describe('Save', () => {
         mask: [dialog.locator('input#notebook-name'), dialog.locator('div#password')],
         maskColor: '#888888'
       })
-    ).toMatchSnapshot('share-dialog.png');
+    ).toMatchSnapshot('share-dialog-on-saving.png');
   });
 });
 
@@ -72,7 +72,7 @@ test.describe('Sharing', () => {
         mask: [dialog.locator('input#notebook-name'), dialog.locator('div#password')],
         maskColor: '#888888'
       })
-    ).toMatchSnapshot('share-dialog.png');
+    ).toMatchSnapshot('share-dialog-on-share-button.png');
   });
 });
 
