@@ -49,10 +49,9 @@ test.describe('General', () => {
   });
 });
 
-test.describe('Sharing', () => {
-  test('Should open share dialog', async ({ page }) => {
-    const shareButton = page.locator('.jp-ToolbarButton').getByTitle('Share this notebook');
-    await shareButton.click();
+test.describe('Save', () => {
+  test('Should open share dialog on save', async ({ page }) => {
+    await runCommand(page, 'jupytereverywhere:share-notebook');
     const dialog = page.locator('.jp-Dialog-content');
     expect(
       await dialog.screenshot({
@@ -63,9 +62,10 @@ test.describe('Sharing', () => {
   });
 });
 
-test.describe('Save', () => {
-  test('Should open share dialog on save', async ({ page }) => {
-    await runCommand(page, 'jupytereverywhere:share-notebook');
+test.describe('Sharing', () => {
+  test('Should open share dialog', async ({ page }) => {
+    const shareButton = page.locator('.jp-ToolbarButton').getByTitle('Share this notebook');
+    await shareButton.click();
     const dialog = page.locator('.jp-Dialog-content');
     expect(
       await dialog.screenshot({
