@@ -74,9 +74,7 @@ test.describe('Save', () => {
       })
     ).toMatchSnapshot('share-dialog.png');
   });
-}
-);
-
+});
 
 test.describe('Download', () => {
   test('Should open download Menu', async ({ page }) => {
