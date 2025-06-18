@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-async function runCommnad(page: Page, command: string, args: JSONObject = {}) {
+async function runCommand(page: Page, command: string, args: JSONObject = {}) {
   await page.evaluate(
     async ({ command, args }) => {
       await window.jupyterapp.commands.execute(command, args);
@@ -62,6 +62,21 @@ test.describe('Sharing', () => {
     ).toMatchSnapshot('share-dialog.png');
   });
 });
+
+test.describe('Save', () => {
+  test('Should open share dialog on save', async ({ page }) => {
+    await runCommand(page, 'jupytereverywhere:share-notebook');
+    const dialog = page.locator('.jp-Dialog-content');
+    expect(
+      await dialog.screenshot({
+        mask: [dialog.locator('input#notebook-name'), dialog.locator('div#password')],
+        maskColor: '#888888'
+      })
+    ).toMatchSnapshot('share-dialog.png');
+  });
+}
+);
+
 
 test.describe('Download', () => {
   test('Should open download Menu', async ({ page }) => {
