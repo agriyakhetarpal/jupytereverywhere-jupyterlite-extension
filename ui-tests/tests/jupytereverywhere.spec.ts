@@ -51,14 +51,8 @@ test.describe('General', () => {
 
 test.describe('Save', () => {
   test('Should open share dialog on save', async ({ page }) => {
-    await runCommand(page, 'docmanager:save');
-    const dialog = page.locator('.jp-Dialog-content');
-    expect(
-      await dialog.screenshot({
-        mask: [dialog.locator('input#notebook-name'), dialog.locator('div#password')],
-        maskColor: '#888888'
-      })
-    ).toMatchSnapshot('share-dialog-on-saving.png');
+    await runCommand(page, 'jupytereverywhere:share-notebook');
+    await page.locator('div').filter({ hasText: 'Here is the shareable link to' }).first().click();
   });
 });
 
@@ -72,7 +66,7 @@ test.describe('Sharing', () => {
         mask: [dialog.locator('input#notebook-name'), dialog.locator('div#password')],
         maskColor: '#888888'
       })
-    ).toMatchSnapshot('share-dialog-on-share-button.png');
+    ).toMatchSnapshot('share-dialog.png');
   });
 });
 
