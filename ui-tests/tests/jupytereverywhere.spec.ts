@@ -51,7 +51,7 @@ test.describe('General', () => {
 
 test.describe('Save', () => {
   test('Should open share dialog on save', async ({ page }) => {
-    await runCommand(page, 'jupytereverywhere:share-notebook');
+    await runCommand(page, 'docmanager:save');
     const dialog = page.locator('.jp-Dialog-content');
     expect(
       await dialog.screenshot({
