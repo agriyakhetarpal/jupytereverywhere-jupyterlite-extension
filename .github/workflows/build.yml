@@ -213,6 +213,11 @@ jobs:
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
 
+    - name: Set up Docker Compose
+      uses: docker/setup-compose-action@v1
+      with:
+        cache-binary: true
+
     - name: Checkout CKHub sharing service
       uses: actions/checkout@v4
       with:
