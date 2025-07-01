@@ -200,6 +200,8 @@ jobs:
     name: Integration tests
     needs: lite
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
