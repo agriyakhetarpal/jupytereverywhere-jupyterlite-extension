@@ -225,6 +225,11 @@ jobs:
         path: ckhub-sharing-service
         token: ${{ secrets.GH_PAT }}
         persist-credentials: false
+
+    - name: Start CKHub sharing service
+      working-directory: ckhub-sharing-service
+      run: docker compose up --build --detach
+
     - name: Download lite app (test mode)
       uses: actions/download-artifact@v4
       with:
