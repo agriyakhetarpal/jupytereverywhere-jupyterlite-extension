@@ -20,7 +20,7 @@ declare global {
 async function runCommand(page: Page, command: string, args: JSONObject = {}) {
   await page.evaluate(
     async ({ command, args }) => {
-      await window.jupyterapp.commands.execute(command, args);
+      window.jupyterapp.commands.execute(command, args);
     },
     { command, args }
   );
@@ -136,6 +136,15 @@ test.describe('Sharing', () => {
     await expect(dialog).toHaveCount(0);
     await runCommand(page, 'jupytereverywhere:share-notebook');
     await expect(dialog).toHaveCount(1);
+  });
+
+  test('Should show share dialog on Accel+S in interactive notebook', async ({ page }) => {
+    await mockTokenRoute(page);
+    await mockShareNotebookResponse(page, 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d');
+    await runCommand(page, 'jupytereverywhere:save-and-share');
+    const dialog = page.locator('.jp-Dialog-content');
+    await expect(dialog).toBeVisible();
+    expect(await dialog.screenshot()).toMatchSnapshot('share-dialog.png');
   });
 });
 
