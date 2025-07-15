@@ -3,17 +3,9 @@ import path from 'path';
 import type { JupyterLab } from '@jupyterlab/application';
 import type { JSONObject } from '@lumino/coreutils';
 
-import { SharingService } from '../../src/sharing-service';
-
 declare global {
   interface Window {
     jupyterapp: JupyterLab;
-  }
-}
-
-declare global {
-  interface Window {
-    sharingService?: SharingService;
   }
 }
 
@@ -26,36 +18,71 @@ async function runCommand(page: Page, command: string, args: JSONObject = {}) {
   );
 }
 
-async function dismissKernelSelectDialog(page: Page) {
-  const kernelDialogHeader = page.locator('.jp-Dialog .jp-Dialog-header', {
-    hasText: 'Select Kernel'
+const TEST_NOTEBOOK = {
+  cells: [
+    {
+      cell_type: 'code',
+      execution_count: null,
+      id: '55eb9a2d-401d-4abd-b0eb-373ded5b408d',
+      outputs: [],
+      metadata: {},
+      source: [`# This is a test notebook`]
+    }
+  ],
+  metadata: {
+    kernelspec: {
+      display_name: 'Python 3 (ipykernel)',
+      language: 'python',
+      name: 'python3'
+    },
+    language_info: {
+      codemirror_mode: {
+        name: 'ipython',
+        version: 3
+      },
+      file_extension: '.py',
+      mimetype: 'text/x-python',
+      name: 'python',
+      nbconvert_exporter: 'python',
+      pygments_lexer: 'ipython3'
+    }
+  },
+  nbformat: 4,
+  nbformat_minor: 5
+};
+
+async function mockTokenRoute(page: Page) {
+  await page.route('**/api/v1/auth/issue', async route => {
+    const json = { token: 'test-token' };
+    await route.fulfill({ json });
   });
-
-  if ((await kernelDialogHeader.count()) === 0) {
-    return;
-  }
-
-  const selectButtonLabel = kernelDialogHeader.locator(
-    'xpath=../../..//div[@aria-label="Select Kernel"]'
-  );
-
-  if (await selectButtonLabel.count()) {
-    await selectButtonLabel.first().click();
-  }
 }
 
-async function getSharedNotebookID(page: Page) {
-  return new URL(page.url()).searchParams.get('notebook');
+async function mockGetSharedNotebook(page: Page, notebookId: string) {
+  await page.route('**/api/v1/notebooks/*', async route => {
+    const json = {
+      id: notebookId,
+      domain_id: 'domain',
+      readable_id: null,
+      content: TEST_NOTEBOOK
+    };
+    await route.fulfill({ json });
+  });
+}
+
+async function mockShareNotebookResponse(page: Page, notebookId: string) {
+  await page.route('**/api/v1/notebooks', async route => {
+    const json = {
+      message: 'Shared!',
+      notebook: { id: notebookId, readable_id: null }
+    };
+    await route.fulfill({ json });
+  });
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('lab/index.html?kernel=python');
+  await page.goto('lab/index.html');
   await page.waitForSelector('.jp-LabShell');
-
-  // Clear token before each test
-  await page.evaluate(() => {
-    window.sharingService?.resetToken();
-  });
 });
 
 test.describe('General', () => {
@@ -70,13 +97,11 @@ test.describe('General', () => {
   });
 
   test('Dialog windows should shade the notebook area only', async ({ page }) => {
-    await dismissKernelSelectDialog(page);
     const firstCell = page.locator('.jp-Cell');
     await firstCell
       .getByRole('textbox')
       .fill('The shaded area should cover the notebook content, but not the toolbar.');
     const promise = runCommand(page, 'notebook:restart-kernel');
-    await dismissKernelSelectDialog(page);
     const dialog = page.locator('.jp-Dialog');
 
     expect(
@@ -92,13 +117,20 @@ test.describe('General', () => {
   });
 
   test('Should load a view-only notebook', async ({ page }) => {
-    await runCommand(page, 'jupytereverywhere:share-notebook');
+    await mockTokenRoute(page);
+    const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
 
-    const notebookId = await getSharedNotebookID(page);
-    expect(notebookId).not.toBeNull();
+    await page.route('**/api/v1/notebooks/*', async route => {
+      const json = {
+        id: notebookId,
+        domain_id: 'domain',
+        readable_id: null,
+        content: TEST_NOTEBOOK
+      };
+      await route.fulfill({ json });
+    });
 
-    await page.goto(`lab/index.html?notebook=${notebookId}&kernel=python`);
-    dismissKernelSelectDialog(page);
+    await page.goto(`lab/index.html?notebook=${notebookId}`);
 
     expect(
       await page.locator('.jp-NotebookPanel').screenshot({
@@ -110,31 +142,36 @@ test.describe('General', () => {
 
   test('Should open files page', async ({ page }) => {
     await page.locator('.jp-SideBar').getByTitle('Files').click();
-    await dismissKernelSelectDialog(page);
     expect(await page.locator('#je-files').screenshot()).toMatchSnapshot('files.png');
   });
 });
 
 test.describe('Sharing', () => {
   test('Should open share dialog in interactive notebook', async ({ page }) => {
-    await runCommand(page, 'jupytereverywhere:share-notebook');
+    await mockTokenRoute(page);
+    await mockShareNotebookResponse(page, 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d');
+    const shareButton = page.locator('.jp-ToolbarButton').getByTitle('Share this notebook');
+    await shareButton.click();
     const dialog = page.locator('.jp-Dialog-content');
     expect(await dialog.screenshot()).toMatchSnapshot('share-dialog.png');
   });
 
   test('Should open share dialog in view-only mode', async ({ page }) => {
+    await mockTokenRoute(page);
+
     // Load view-only (shared) notebook
-    await runCommand(page, 'jupytereverywhere:share-notebook');
-    const notebookId = await getSharedNotebookID(page);
-    expect(notebookId).not.toBeNull();
+    const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
+    await mockGetSharedNotebook(page, notebookId);
+    await page.goto(`lab/index.html?notebook=${notebookId}`);
 
-    // Re-share it as a new notebook
-    await page.goto(`lab/index.html?notebook=${notebookId}&kernel=python`);
-    dismissKernelSelectDialog(page);
+    // Re-Share it as a new notebook
+    const newNotebookId = '104931f8-fd96-489e-8520-c1793cbba6ce';
+    await mockShareNotebookResponse(page, newNotebookId);
 
+    const shareButton = page.locator('.jp-ToolbarButton').getByTitle('Share this notebook');
     const dialog = page.locator('.jp-Dialog-content');
     await expect(dialog).toHaveCount(0);
-    await runCommand(page, 'jupytereverywhere:share-notebook');
+    await shareButton.click();
     await expect(dialog).toHaveCount(1);
   });
 
@@ -158,10 +195,8 @@ test.describe('Download', () => {
   });
 
   test('Should download a notebook as IPyNB and PDF', async ({ page, context }) => {
-    dismissKernelSelectDialog(page);
-    await runCommand(page, 'jupytereverywhere:share-notebook');
-    await getSharedNotebookID(page);
-    dismissKernelSelectDialog(page);
+    await mockTokenRoute(page);
+    await mockShareNotebookResponse(page, 'test-download-regular-notebook');
 
     const ipynbDownload = page.waitForEvent('download');
     await runCommand(page, 'jupytereverywhere:download-notebook');
@@ -175,24 +210,26 @@ test.describe('Download', () => {
   });
 
   test('Should download view-only notebook as IPyNB and PDF', async ({ page }) => {
-    await runCommand(page, 'jupytereverywhere:share-notebook');
-    const notebookId = await getSharedNotebookID(page);
-    expect(notebookId).not.toBeNull();
+    await mockTokenRoute(page);
 
-    await page.goto(`lab/index.html?notebook=${notebookId}&kernel=python`);
-    dismissKernelSelectDialog(page);
+    const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
+    await mockGetSharedNotebook(page, notebookId);
+    await mockShareNotebookResponse(page, 'test-download-viewonly-notebook');
+
+    await page.goto(`lab/index.html?notebook=${notebookId}`);
 
     // Wait until view-only notebook loads, and assert it is a view-only notebook.
     await page.locator('.jp-NotebookPanel').waitFor();
     await expect(page.locator('.je-ViewOnlyHeader')).toBeVisible();
 
     const ipynbDownload = page.waitForEvent('download');
-    await runCommand(page, 'jupytereverywhere:download-notebook');
+    await runCommand(page, 'jupytereverywhere:download-pdf');
     const ipynbPath = await (await ipynbDownload).path();
     expect(ipynbPath).not.toBeNull();
 
     const pdfDownload = page.waitForEvent('download');
     await runCommand(page, 'jupytereverywhere:download-pdf');
+
     const pdfPath = await (await pdfDownload).path();
     expect(pdfPath).not.toBeNull();
   });
@@ -200,11 +237,10 @@ test.describe('Download', () => {
 
 test.describe('Files', () => {
   test('Should upload two files and display their thumbnails', async ({ page }) => {
-    await page.goto('lab/index.html?kernel=python');
+    await page.goto('lab/index.html');
     await page.waitForSelector('.jp-LabShell');
 
     await page.locator('.jp-SideBar').getByTitle('Files').click();
-    await dismissKernelSelectDialog(page);
 
     await page.locator('.je-FileTile').first().click(); // the first tile will always be the "add new" one
 
@@ -232,15 +268,17 @@ test.describe('Files', () => {
 });
 
 test('Should remove View Only banner when the Create Copy button is clicked', async ({ page }) => {
-  await runCommand(page, 'jupytereverywhere:share-notebook');
-  const notebookId = await getSharedNotebookID(page);
-  expect(notebookId).not.toBeNull();
+  await mockTokenRoute(page);
+
+  const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
+  await mockGetSharedNotebook(page, notebookId);
 
   // Open view-only notebook
-  await page.goto(`lab/index.html?notebook=${notebookId}&kernel=python`);
+  await page.goto(`lab/index.html?notebook=${notebookId}`);
   await expect(page.locator('.je-ViewOnlyHeader')).toBeVisible();
 
-  await runCommand(page, 'jupytereverywhere:create-copy-notebook');
+  const createCopyButton = page.locator('.jp-ToolbarButtonComponent.je-CreateCopyButton');
+  await createCopyButton.click();
   await expect(page.locator('.je-ViewOnlyHeader')).toBeHidden({
     timeout: 10000
   });

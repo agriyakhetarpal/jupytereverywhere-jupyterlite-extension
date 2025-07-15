@@ -145,8 +145,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
       PageConfig.getOption('sharing_service_api_url') || 'http://localhost:8080/api/v1';
 
     const sharingService = new SharingService(apiUrl);
-    // Temporary
-    (window as any).sharingService = sharingService;
 
     /**
      * Hook into notebook saves using the saveState signal to handle CKHub sharing

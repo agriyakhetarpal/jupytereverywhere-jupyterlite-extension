@@ -39,10 +39,7 @@ export const notebookPlugin: JupyterFrontEndPlugin<void> = {
 
         const apiUrl =
           PageConfig.getOption('sharing_service_api_url') || 'http://localhost:8080/api/v1';
-
-        // Temporary
-        const sharingService = (window as any).sharingService ?? new SharingService(apiUrl);
-        (window as any).sharingService = sharingService;
+        const sharingService = new SharingService(apiUrl);
 
         console.log(`API URL: ${apiUrl}`);
         console.log('Retrieving notebook from API...');

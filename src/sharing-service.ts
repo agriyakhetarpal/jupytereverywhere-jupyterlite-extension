@@ -396,11 +396,4 @@ export class SharingService {
 
     return headers;
   }
-
-  /**
-   * Clears the cached token so a fresh one is fetched on next request.
-   */
-  resetToken(): void {
-    this._token = undefined;
-  }
 }
