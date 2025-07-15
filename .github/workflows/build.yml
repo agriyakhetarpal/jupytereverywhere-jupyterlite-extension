@@ -239,10 +239,6 @@ jobs:
         path: ckhub-sharing-service
         persist-credentials: false
 
-    - name: Start CKHub sharing service
-      working-directory: ckhub-sharing-service
-      run: docker compose up --build --detach
-
     - name: Download lite app (test mode)
       uses: actions/download-artifact@v4
       with:
@@ -271,6 +267,10 @@ jobs:
     - name: Install browser
       run: jlpm playwright install chromium
       working-directory: ui-tests
+
+    - name: Start CKHub sharing service
+      working-directory: ckhub-sharing-service
+      run: docker compose up --build --detach
 
     - name: Execute integration tests
       working-directory: ui-tests
