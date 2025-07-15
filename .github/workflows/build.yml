@@ -225,7 +225,6 @@ jobs:
       with:
         repository: jupytereverywhere/sharing-service
         path: ckhub-sharing-service
-        token: ${{ secrets.GH_PAT }}
         persist-credentials: false
 
     - name: Start CKHub sharing service
