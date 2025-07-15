@@ -51,13 +51,6 @@ const TEST_NOTEBOOK = {
   nbformat_minor: 5
 };
 
-async function mockTokenRoute(page: Page) {
-  await page.route('**/api/v1/auth/issue', async route => {
-    const json = { token: 'test-token' };
-    await route.fulfill({ json });
-  });
-}
-
 async function mockGetSharedNotebook(page: Page, notebookId: string) {
   await page.route('**/api/v1/notebooks/*', async route => {
     const json = {
@@ -117,7 +110,6 @@ test.describe('General', () => {
   });
 
   test('Should load a view-only notebook', async ({ page }) => {
-    await mockTokenRoute(page);
     const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
 
     await page.route('**/api/v1/notebooks/*', async route => {
@@ -148,7 +140,6 @@ test.describe('General', () => {
 
 test.describe('Sharing', () => {
   test('Should open share dialog in interactive notebook', async ({ page }) => {
-    await mockTokenRoute(page);
     await mockShareNotebookResponse(page, 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d');
     const shareButton = page.locator('.jp-ToolbarButton').getByTitle('Share this notebook');
     await shareButton.click();
@@ -157,8 +148,6 @@ test.describe('Sharing', () => {
   });
 
   test('Should open share dialog in view-only mode', async ({ page }) => {
-    await mockTokenRoute(page);
-
     // Load view-only (shared) notebook
     const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
     await mockGetSharedNotebook(page, notebookId);
@@ -186,7 +175,6 @@ test.describe('Download', () => {
   });
 
   test('Should download a notebook as IPyNB and PDF', async ({ page, context }) => {
-    await mockTokenRoute(page);
     await mockShareNotebookResponse(page, 'test-download-regular-notebook');
 
     const ipynbDownload = page.waitForEvent('download');
@@ -201,8 +189,6 @@ test.describe('Download', () => {
   });
 
   test('Should download view-only notebook as IPyNB and PDF', async ({ page }) => {
-    await mockTokenRoute(page);
-
     const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
     await mockGetSharedNotebook(page, notebookId);
     await mockShareNotebookResponse(page, 'test-download-viewonly-notebook');
@@ -259,8 +245,6 @@ test.describe('Files', () => {
 });
 
 test('Should remove View Only banner when the Create Copy button is clicked', async ({ page }) => {
-  await mockTokenRoute(page);
-
   const notebookId = 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d';
   await mockGetSharedNotebook(page, notebookId);
 
