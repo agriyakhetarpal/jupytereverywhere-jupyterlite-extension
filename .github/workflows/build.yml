@@ -268,13 +268,15 @@ jobs:
       run: jlpm playwright install chromium
       working-directory: ui-tests
 
-    - name: Start CKHub sharing service
-      working-directory: ckhub-sharing-service
-      run: docker compose up --build --detach
-
-    - name: Execute integration tests
+    - name: Start CKHub sharing service and execute integration tests
       working-directory: ui-tests
       run: |
+        echo "::group::Starting CKHub sharing service"
+        cd ckhub-sharing-service
+        docker compose up --build --detach
+        cd ..
+        echo "::endgroup::"
+
         jlpm playwright test --browser chromium
 
     - name: Upload Playwright Test report
