@@ -20,25 +20,76 @@
   --je-slate-blue: #412c88;
   --je-round-corners: 12px;
   --je-font-family: 'Inter', sans-serif;
+  --je-dialog-round-corners: 12px;
+  --je-document-padding: 25px;
+  --je-sidebar-width: var(--jp-private-sidebar-tab-width);
+  --je-toolbar-height: var(--jp-private-toolbar-height);
+  --je-margin-below-toolbar: 10px;
+  --je-border-color: #e6e6e6;
+  --je-slate-blue-gradient:
+    linear-gradient(90deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 20%) 100%), #4b3187;
 }
 
-.je-Tile {
-  border: 0;
-  background: none;
-  padding: 5px;
-  margin: 4px;
-}
-
-.je-Tile-icon {
-  border: 3px solid var(--je-slate-blue);
+.je-DownloadDropdownButton-menu {
   border-radius: 4px;
-  height: 100%;
-  box-sizing: border-box;
+  color: var(--je-slate-blue);
+  font-family: var(--je-font-family);
+  border-collapse: collapse;
+  border-color: var(--je-border-color);
 }
 
-.je-Tile:hover {
-  background: #e8e3e3;
-  cursor: pointer;
+.je-DownloadDropdownButton-menu .lm-Menu-item {
+  border-top: 1px solid var(--je-border-color);
+}
+
+.je-DownloadDropdownButton-menu .lm-Menu-item:first-of-type {
+  border: 0;
+}
+
+.jp-Dialog-content {
+  border: 3px solid var(--je-slate-blue);
+  border-radius: var(--je-dialog-round-corners);
+  box-shadow: 3px 3px 3px rgb(0 0 0 / 25%);
+  font-family: var(--je-font-family);
+}
+
+.jp-Dialog-footer {
+  justify-content: center;
+}
+
+.jp-Dialog {
+  clip-path: rect(
+    calc(var(--je-document-padding) + var(--je-toolbar-height) + var(--je-margin-below-toolbar))
+      calc(100% - var(--je-document-padding)) calc(100% - var(--je-document-padding))
+      calc(var(--je-document-padding) + var(--je-sidebar-width)) round var(--je-round-corners)
+  );
+}
+
+.jp-Dialog-content .jp-Dialog-button {
+  background: var(--je-slate-blue-gradient) !important;
+  box-shadow: 0 1.5px 3px rgb(0 0 0 / 5%);
+  border-radius: var(--je-dialog-round-corners);
+  font-family: var(--je-font-family);
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.jp-Dialog-header {
+  color: var(--je-slate-blue);
+  font-family: var(--je-font-family);
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+}
+
+.je-share-link {
+  background: #f0f0f0;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  word-break: break-all;
+  font-family: monospace;
 }
 
 .je-PageTitle {
@@ -54,7 +105,7 @@
 }
 
 .jp-Toolbar {
-  --jp-ui-font-color1: #412c88;
+  --jp-ui-font-color1: var(--je-slate-blue);
   --jp-ui-font-family: var(--je-font-family);
 }
 
@@ -62,8 +113,51 @@
   font-weight: 600;
 }
 
+/* Main area widget base styles */
+.jp-MainAreaWidget > .jp-Toolbar {
+  border-radius: var(--je-round-corners);
+}
+
+.jp-MainAreaWidget > :not(.jp-Toolbar) {
+  border-radius: var(--je-round-corners);
+  margin-top: var(--je-margin-below-toolbar);
+  background: white;
+}
+
+/* View Only header */
+.je-ViewOnlyHeader {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  background: var(--je-slate-blue);
+}
+
+.je-ViewOnlyHeader-content {
+  color: white;
+  font-family: var(--je-font-family);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 16px;
+  width: 100%;
+}
+
+.jp-MainAreaWidget > .je-ViewOnlyHeader-wrapper {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.je-ViewOnlyHeader-wrapper + .jp-Notebook {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.jp-NotebookPanel-toolbar.je-ViewOnlyNotebookToolbar {
+  border: 3px solid var(--je-slate-blue) !important;
+}
+
 #jp-main-dock-panel[data-mode='single-document'] {
-  padding: 25px !important;
+  padding: var(--je-document-padding) !important;
   background: #d8b8dc;
 }
 
@@ -72,12 +166,17 @@
   background: transparent;
 }
 
-.jp-MainAreaWidget > .jp-Toolbar {
+.jp-ToolbarButtonComponent.je-CreateCopyButton {
+  background: var(--je-slate-blue-gradient);
+  color: white;
   border-radius: var(--je-round-corners);
+  font-family: var(--je-font-family);
+  font-weight: 600;
+  padding: 4px 12px;
+  border: none;
+  box-shadow: 1px 2px 0 #0000006f !important; /* pretty much convinced my browser is haunted */
 }
 
-.jp-MainAreaWidget > :not(.jp-Toolbar) {
-  border-radius: var(--je-round-corners);
-  margin-top: 10px;
-  background: white;
+.jp-ToolbarButtonComponent.je-CreateCopyButton:hover {
+  background: #2c1f5c;
 }

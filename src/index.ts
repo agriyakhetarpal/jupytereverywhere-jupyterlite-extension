@@ -1,6 +1,5 @@
 import { ILabShell, JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
-import { ReadonlyPartialJSONObject } from '@lumino/coreutils';
 import { Dialog, showDialog, ReactWidget } from '@jupyterlab/apputils';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { INotebookContent } from '@jupyterlab/nbformat';
@@ -16,6 +15,11 @@ import { Commands } from './commands';
 import { competitions } from './pages/competitions';
 import { notebookPlugin } from './pages/notebook';
 import { generateDefaultNotebookName } from './notebook-name';
+import {
+  IViewOnlyNotebookTracker,
+  viewOnlyNotebookFactoryPlugin,
+  ViewOnlyNotebookPanel
+} from './view-only';
 
 /**
  * Generate a shareable URL for the currently active notebook.
@@ -28,25 +32,7 @@ function generateShareURL(notebookID: string): string {
   return `${baseUrl}?notebook=${notebookID}`;
 }
 
-/**
- * Get the current notebook panel
- */
-function getCurrentNotebook(
-  tracker: INotebookTracker,
-  shell: JupyterFrontEnd.IShell,
-  args: ReadonlyPartialJSONObject = {}
-): NotebookPanel | null {
-  const widget = tracker.currentWidget;
-  const activate = args['activate'] !== false;
-
-  if (activate && widget) {
-    shell.activateById(widget.id);
-  }
-
-  return widget;
-}
-
-const manuallySharing = new WeakSet<NotebookPanel>();
+const manuallySharing = new WeakSet<NotebookPanel | ViewOnlyNotebookPanel>();
 
 /**
  * Show a dialog with a shareable link for the notebook.
@@ -68,9 +54,9 @@ async function showShareDialog(sharingService: SharingService, notebookContent: 
   const shareableLink = generateShareURL(notebookID);
 
   const dialogResult = await showDialog({
-    title: '',
+    title: 'Here is the shareable link to your notebook:',
     body: ReactWidget.create(createSuccessDialog(shareableLink)),
-    buttons: [Dialog.okButton({ label: 'Copy Link!' }), Dialog.cancelButton({ label: 'Close' })]
+    buttons: [Dialog.okButton({ label: 'Copy Link!' })]
   });
 
   if (dialogResult.button.label === 'Copy Link!') {
@@ -91,7 +77,7 @@ async function showShareDialog(sharingService: SharingService, notebookContent: 
  * true when the user clicks "Share Notebook" from the menu.
  */
 async function handleNotebookSharing(
-  notebookPanel: NotebookPanel,
+  notebookPanel: NotebookPanel | ViewOnlyNotebookPanel,
   sharingService: SharingService,
   manual: boolean
 ) {
@@ -141,8 +127,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
   id: 'jupytereverywhere:plugin',
   description: 'A Jupyter extension for k12 education',
   autoStart: true,
-  requires: [INotebookTracker],
-  activate: (app: JupyterFrontEnd, tracker: INotebookTracker) => {
+  requires: [INotebookTracker, IViewOnlyNotebookTracker],
+  activate: (
+    app: JupyterFrontEnd,
+    tracker: INotebookTracker,
+    readonlyTracker: IViewOnlyNotebookTracker
+  ) => {
     const { commands, shell } = app;
 
     if ((shell as ILabShell).mode !== 'single-document') {
@@ -176,7 +166,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
      * 1. A "Download as IPyNB" command.
      */
     commands.addCommand(Commands.downloadNotebookCommand, {
-      label: 'Download as IPyNB',
+      label: 'Download as a notebook',
       execute: args => {
         // Execute the built-in download command
         return commands.execute('docmanager:download');
@@ -189,14 +179,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
     commands.addCommand(Commands.downloadPDFCommand, {
       label: 'Download as PDF',
       execute: async args => {
-        const current = getCurrentNotebook(tracker, shell, args);
-        if (!current) {
+        const panel = readonlyTracker.currentWidget ?? tracker.currentWidget;
+
+        if (!panel) {
           console.warn('No active notebook to download as PDF');
           return;
         }
 
         try {
-          await exportNotebookAsPDF(current);
+          await exportNotebookAsPDF(panel);
         } catch (error) {
           console.error('Failed to export notebook as PDF:', error);
           await showDialog({
@@ -215,8 +206,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
       label: 'Share Notebook',
       execute: async () => {
         try {
-          const notebookPanel = tracker.currentWidget;
+          const notebookPanel = readonlyTracker.currentWidget
+            ? readonlyTracker.currentWidget
+            : tracker.currentWidget;
           if (!notebookPanel) {
+            console.warn('Notebook panel not found, no notebook to share');
             return;
           }
 
@@ -233,7 +227,78 @@ const plugin: JupyterFrontEndPlugin<void> = {
         }
       }
     });
+    /**
+     * Add custom Create Copy notebook command
+     * Note: this command is supported and displayed only for View Only notebooks.
+     */
+    commands.addCommand(Commands.createCopyNotebookCommand, {
+      label: 'Create Copy',
+      execute: async () => {
+        try {
+          const readonlyPanel = readonlyTracker.currentWidget;
+
+          if (!readonlyPanel) {
+            console.warn('No view-only notebook is currently active.');
+            return;
+          }
+
+          const originalContent = readonlyPanel.context.model.toJSON() as INotebookContent;
+          // Remove any sharing-specific metadata from the copy,
+          // as we create a fresh notebook with new metadata below.
+          const purgedMetadata = { ...originalContent.metadata };
+          delete purgedMetadata.isSharedNotebook;
+          delete purgedMetadata.sharedId;
+          delete purgedMetadata.readableId;
+          delete purgedMetadata.domainId;
+          delete purgedMetadata.sharedName;
+          delete purgedMetadata.lastShared;
+
+          const copyContent: INotebookContent = {
+            ...originalContent,
+            metadata: purgedMetadata
+          };
+
+          const result = await app.serviceManager.contents.newUntitled({
+            type: 'notebook'
+          });
+
+          await app.serviceManager.contents.save(result.path, {
+            type: 'notebook',
+            format: 'json',
+            content: copyContent
+          });
+
+          // Open the notebook in the normal notebook factory, and
+          // close the previously opened notebook (th view-only one).
+          await commands.execute('docmanager:open', {
+            path: result.path
+          });
+          await readonlyPanel.close();
+
+          // Remove notebook param from the URL
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.delete('notebook');
+          window.history.replaceState({}, '', currentUrl.toString());
+
+          console.log(`Notebook copied as: ${result.path}`);
+        } catch (error) {
+          console.error('Failed to create notebook copy:', error);
+          await showDialog({
+            title: 'Error while creating a copy of the notebook',
+            body: ReactWidget.create(createErrorDialog(error)),
+            buttons: [Dialog.okButton()]
+          });
+        }
+      }
+    });
   }
 };
 
-export default [plugin, notebookPlugin, files, competitions, customSidebar];
+export default [
+  viewOnlyNotebookFactoryPlugin,
+  plugin,
+  notebookPlugin,
+  files,
+  competitions,
+  customSidebar
+];
