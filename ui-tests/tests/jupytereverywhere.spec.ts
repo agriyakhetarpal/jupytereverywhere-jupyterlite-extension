@@ -195,6 +195,7 @@ test.describe('Files', () => {
     await page.waitForSelector('.jp-LabShell');
 
     await page.locator('.jp-SideBar').getByTitle('Files').click();
+    await dismissKernelSelectDialog(page);
 
     await page.locator('.je-FileTile').first().click(); // the first tile will always be the "add new" one
 
