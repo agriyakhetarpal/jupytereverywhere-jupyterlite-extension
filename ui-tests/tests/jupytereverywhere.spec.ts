@@ -76,6 +76,11 @@ async function mockShareNotebookResponse(page: Page, notebookId: string) {
 test.beforeEach(async ({ page }) => {
   await page.goto('lab/index.html');
   await page.waitForSelector('.jp-LabShell');
+
+  // Clear token before each test
+  await page.evaluate(() => {
+    window.sharingService?.resetToken();
+  });
 });
 
 test.describe('General', () => {
