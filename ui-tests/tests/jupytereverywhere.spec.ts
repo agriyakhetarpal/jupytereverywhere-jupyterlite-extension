@@ -405,6 +405,66 @@ test('Should switch to R kernel and run R code', async ({ page }) => {
   expect(await output.screenshot()).toMatchSnapshot('r-output.png');
 });
 
+test.describe('Leave confirmation', () => {
+  test('Leave confirmation snapshot', async ({ page }) => {
+    await mockTokenRoute(page);
+    await page.goto('lab/index.html');
+    await page.waitForSelector('.jp-NotebookPanel');
+
+    const jeButton = page.locator('.jp-SideBar').getByTitle('Jupyter Everywhere');
+    await jeButton.click();
+
+    const dialog = page.locator('.jp-Dialog');
+    await expect(dialog).toBeVisible();
+    await page.waitForSelector('.jp-KernelStatus-success');
+    expect(await dialog.screenshot()).toMatchSnapshot('leave-confirmation-dialog.png');
+  });
+
+  test('When cancelled, should remain on the notebook view', async ({ page }) => {
+    await mockTokenRoute(page);
+    await page.goto('lab/index.html');
+    await page.waitForSelector('.jp-NotebookPanel');
+
+    const jeButton = page.locator('.jp-SideBar').getByTitle('Jupyter Everywhere');
+    await jeButton.click();
+
+    const dialog = page.locator('.jp-Dialog');
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(page.locator('.jp-NotebookPanel')).toBeVisible();
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test('Should accept and show share dialog, then redirect', async ({ page }) => {
+    await mockTokenRoute(page);
+    await mockShareNotebookResponse(page, 'test-redirect-notebook-id');
+    await page.goto('lab/index.html');
+    await page.waitForSelector('.jp-NotebookPanel');
+
+    const jeButton = page.locator('.jp-SideBar').getByTitle('Jupyter Everywhere');
+    await jeButton.click();
+
+    const dialog = page.locator('.jp-Dialog');
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Yes' }).click();
+
+    const shareDialog = page.locator('.jp-Dialog-content');
+    await expect(shareDialog).toBeVisible();
+
+    const copyButton = shareDialog.locator('button.jp-Dialog-button').first();
+    await copyButton.click();
+
+    // Wait for redirect to the landing page, and make
+    // sure we're not on the notebook page anymore.
+    await page.waitForSelector('.je-hero', { timeout: 5000 });
+
+    await expect(page.locator('.jp-NotebookPanel')).toHaveCount(0);
+  });
+});
+
 test.describe('Sharing and copying R and Python notebooks', () => {
   test('Should create copy from view-only R notebook and keep R kernel', async ({ page }) => {
     await mockTokenRoute(page);
