@@ -31,9 +31,9 @@ const PYTHON_TEST_NOTEBOOK: JSONObject = {
   ],
   metadata: {
     kernelspec: {
-      display_name: 'Python 3 (ipykernel)',
+      display_name: 'Python 3.13 (XPython)',
       language: 'python',
-      name: 'python3'
+      name: 'xpython'
     },
     language_info: {
       codemirror_mode: {
@@ -354,7 +354,7 @@ test.describe('Landing page', () => {
     page
   }) => {
     await page.goto('index.html');
-    await page.click('a[href*="kernel=python"]');
+    await page.click('a[href*="kernel=xpython"]');
     await page.waitForSelector('.jp-NotebookPanel');
 
     const kernelLabel = await page.locator('.je-KernelSwitcherButton').innerText();
