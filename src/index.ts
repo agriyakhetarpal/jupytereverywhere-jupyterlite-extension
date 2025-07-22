@@ -9,6 +9,10 @@ import { SharingService } from './sharing-service';
 
 import { createSuccessDialog, createErrorDialog } from './ui-components/share-dialog';
 
+import { LabIcon } from '@jupyterlab/ui-components';
+import refreshIcon from '../style/icons/refresh.svg';
+import fastForwardSvg from '../style/icons/fast-forward.svg';
+
 import { exportNotebookAsPDF } from './pdf';
 import { files } from './pages/files';
 import { Commands } from './commands';
@@ -207,6 +211,75 @@ const plugin: JupyterFrontEndPlugin<void> = {
             body: ReactWidget.create(createErrorDialog(error)),
             buttons: [Dialog.okButton()]
           });
+        }
+      }
+    });
+
+    /**
+     * Add a command to restart the notebook kernel, terming it as "memory"
+     */
+    const RefreshLabIcon = new LabIcon({
+      name: 'jupytereverywhere:refresh',
+      svgstr: refreshIcon
+    });
+
+    commands.addCommand(Commands.restartMemoryCommand, {
+      label: 'Restart Notebook Memory',
+      icon: RefreshLabIcon,
+      execute: async () => {
+        const panel = tracker.currentWidget;
+        if (!panel) {
+          console.warn('No active notebook to restart.');
+          return;
+        }
+
+        const result = await showDialog({
+          title: 'Would you like to restart the notebook’s memory?',
+          buttons: [Dialog.cancelButton({ label: 'Cancel' }), Dialog.okButton({ label: 'Restart' })]
+        });
+
+        if (result.button.accept) {
+          try {
+            await panel.sessionContext.restartKernel();
+          } catch (err) {
+            console.error('Memory restart failed', err);
+          }
+        }
+      }
+    });
+
+    /**
+     * Add a command to restart the notebook kernel, terming it as "memory",
+     * and run all cells after the restart.
+     */
+    const customFastForwardIcon = new LabIcon({
+      name: 'jupytereverywhere:restart-run',
+      svgstr: fastForwardSvg
+    });
+
+    commands.addCommand(Commands.restartMemoryAndRunAllCommand, {
+      label: 'Restart Notebook Memory and Run All Cells',
+      icon: customFastForwardIcon,
+      isEnabled: () => !!tracker.currentWidget,
+      execute: async () => {
+        const panel = tracker.currentWidget;
+        if (!panel) {
+          console.warn('No active notebook to restart and run.');
+          return;
+        }
+
+        const result = await showDialog({
+          title: 'Would you like to restart the notebook’s memory and rerun all cells?',
+          buttons: [Dialog.cancelButton({ label: 'Cancel' }), Dialog.okButton({ label: 'Restart' })]
+        });
+
+        if (result.button.accept) {
+          try {
+            await panel.sessionContext.restartKernel();
+            await commands.execute('notebook:run-all-cells');
+          } catch (err) {
+            console.error('Restarting and running all cells failed', err);
+          }
         }
       }
     });
