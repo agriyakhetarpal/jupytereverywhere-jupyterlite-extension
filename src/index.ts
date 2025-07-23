@@ -1,6 +1,6 @@
 import { ILabShell, JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
-import { Dialog, showDialog, ReactWidget } from '@jupyterlab/apputils';
+import { Dialog, showDialog, ReactWidget, Notification } from '@jupyterlab/apputils';
 import { PageConfig } from '@jupyterlab/coreutils';
 import { INotebookContent } from '@jupyterlab/nbformat';
 
@@ -364,6 +364,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
         if (!panel) {
           console.warn('No active notebook panel.');
           return;
+        }
+
+        const currentKernel = panel.sessionContext.session?.kernel?.name || '';
+
+        if (currentKernel !== kernel) {
+          const currentKernelDisplay = KERNEL_DISPLAY_NAMES[currentKernel] || currentKernel;
+          const targetKernelDisplay = KERNEL_DISPLAY_NAMES[kernel] || kernel;
+          Notification.warning(
+            `You are about to switch your notebook coding language from ${currentKernelDisplay} to ${targetKernelDisplay}. Your previously created code will not run as intended.`,
+            { autoClose: 5000 }
+          );
         }
 
         await switchKernel(panel, kernel);
