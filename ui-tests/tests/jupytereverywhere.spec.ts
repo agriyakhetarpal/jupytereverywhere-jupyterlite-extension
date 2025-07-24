@@ -1,5 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import type { JupyterLab } from '@jupyterlab/application';
 import type { JSONObject } from '@lumino/coreutils';
 
@@ -16,6 +18,12 @@ async function runCommand(page: Page, command: string, args: JSONObject = {}) {
     },
     { command, args }
   );
+}
+
+async function createTempNotebookFile(notebook: JSONObject, filename: string): Promise<string> {
+  const tempPath = path.join(os.tmpdir(), filename);
+  await fs.promises.writeFile(tempPath, JSON.stringify(notebook, null, 2));
+  return tempPath;
 }
 
 const PYTHON_TEST_NOTEBOOK: JSONObject = {
@@ -73,6 +81,33 @@ const R_TEST_NOTEBOOK: JSONObject = {
       file_extension: '.r',
       mimetype: 'text/x-r-source',
       name: 'R'
+    }
+  },
+  nbformat: 4,
+  nbformat_minor: 5
+};
+
+const CLOJURE_TEST_NOTEBOOK: JSONObject = {
+  cells: [
+    {
+      cell_type: 'code',
+      execution_count: null,
+      id: 'clojure-test-cell',
+      outputs: [],
+      metadata: {},
+      source: [`; This is a Clojure test notebook`]
+    }
+  ],
+  metadata: {
+    kernelspec: {
+      display_name: 'Clojure (irony)',
+      language: 'Clojure',
+      name: 'iclojure'
+    },
+    language_info: {
+      file_extension: '.clj',
+      mimetype: 'text/x-clojure',
+      name: 'Clojure'
     }
   },
   nbformat: 4,
@@ -368,6 +403,40 @@ test.describe('Landing page', () => {
 
     const kernelLabel = await page.locator('.je-KernelSwitcherButton').innerText();
     expect(kernelLabel.toLowerCase()).toContain('r');
+  });
+
+  test('Uploading a Python notebook redirects to JupyterLite', async ({ page }) => {
+    await page.goto('index.html');
+
+    const notebookPath = await createTempNotebookFile(PYTHON_TEST_NOTEBOOK, 'python-test.ipynb');
+
+    await page.setInputFiles('input[type="file"]', notebookPath);
+
+    await page.waitForURL(/lab\/index\.html\?uploaded-notebook=.*/);
+    await page.waitForSelector('.jp-NotebookPanel');
+  });
+
+  test('Uploading an R notebook redirects to JupyterLite', async ({ page }) => {
+    await page.goto('index.html');
+
+    const notebookPath = await createTempNotebookFile(R_TEST_NOTEBOOK, 'r-test.ipynb');
+
+    await page.setInputFiles('input[type="file"]', notebookPath);
+
+    await page.waitForURL(/lab\/index\.html\?uploaded-notebook=.*/);
+    await page.waitForSelector('.jp-NotebookPanel');
+  });
+
+  test('Uploading an unsupported notebook shows an error alert', async ({ page }) => {
+    await page.goto('index.html');
+
+    const notebookPath = await createTempNotebookFile(CLOJURE_TEST_NOTEBOOK, 'clojure-test.ipynb');
+
+    page.on('dialog', async dialog => {
+      expect(dialog.message()).toContain('Only Python and R notebooks are supported');
+    });
+
+    await page.setInputFiles('input[type="file"]', notebookPath);
   });
 });
 

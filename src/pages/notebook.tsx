@@ -12,6 +12,26 @@ import { VIEW_ONLY_NOTEBOOK_FACTORY, IViewOnlyNotebookTracker } from '../view-on
 import { KernelSwitcherDropdownButton } from '../ui-components/KernelSwitcherDropdownButton';
 import { KERNEL_URL_TO_NAME } from '../kernels';
 
+/**
+ * Maps the notebook content language to a kernel name. We currently
+ * only support Python and R notebooks, so this function maps them
+ * to 'xpython' and 'xr' respectively. If the language is not recognized,
+ * it defaults to 'xpython'.
+ * @param content - The notebook content to map the language to a kernel name.
+ * @returns - The kernel name as a string, either 'xpython' for Python or 'xr' for R.
+ */
+function mapLanguageToKernel(content: INotebookContent): string {
+  const rawLang =
+    (content?.metadata?.kernelspec?.language as string | undefined)?.toLowerCase() ||
+    (content?.metadata?.language_info?.name as string | undefined)?.toLowerCase() ||
+    'python';
+
+  if (rawLang === 'r') {
+    return 'xr';
+  }
+  return 'xpython';
+}
+
 export const notebookPlugin: JupyterFrontEndPlugin<void> = {
   id: 'jupytereverywhere:notebook',
   autoStart: true,
@@ -27,6 +47,7 @@ export const notebookPlugin: JupyterFrontEndPlugin<void> = {
 
     const params = new URLSearchParams(window.location.search);
     let notebookId = params.get('notebook');
+    const uploadedNotebookId = params.get('uploaded-notebook');
 
     if (notebookId?.endsWith('.ipynb')) {
       notebookId = notebookId.slice(0, -6);
@@ -137,10 +158,53 @@ export const notebookPlugin: JupyterFrontEndPlugin<void> = {
       }
     };
 
-    // If a notebook ID is provided in the URL, load it; otherwise,
-    // create a new notebook
+    const openUploadedNotebook = async (id: string): Promise<void> => {
+      try {
+        const raw = localStorage.getItem(`uploaded-notebook:${id}`);
+        // Should not happen
+        if (!raw) {
+          console.warn(`No uploaded notebook found for ID: ${id}`);
+          await createNewNotebook();
+          return;
+        }
+
+        const content = JSON.parse(raw) as INotebookContent;
+
+        const kernelName = mapLanguageToKernel(content);
+        content.metadata.kernelspec = {
+          name: kernelName,
+          display_name: kernelName === 'xpython' ? 'Python 3' : 'R'
+        };
+
+        const filename = `${(content.metadata?.name as string) || `Uploaded_${id}`}.ipynb`;
+
+        await contents.save(filename, {
+          type: 'notebook',
+          format: 'json',
+          content
+        });
+        await commands.execute('docmanager:open', { path: filename });
+
+        // Once we have the notebook in the editor, it is now safe to drop
+        // the uploaded notebook ID from the URL and the temporary storage.
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('uploaded-notebook');
+        window.history.replaceState({}, '', currentUrl.toString());
+
+        localStorage.removeItem(`uploaded-notebook:${id}`);
+        console.log(`Opened uploaded notebook: ${filename}`);
+      } catch (error) {
+        console.error('Failed to open uploaded notebook:', error);
+        await createNewNotebook();
+      }
+    };
+
+    // If a notebook ID is provided in the URL (whether shared or uploaded),
+    // load it; otherwise, create a new notebook
     if (notebookId) {
       void loadSharedNotebook(notebookId);
+    } else if (uploadedNotebookId) {
+      void openUploadedNotebook(uploadedNotebookId);
     } else {
       void createNewNotebook();
     }
