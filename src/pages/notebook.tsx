@@ -272,6 +272,16 @@ export const notebookPlugin: JupyterFrontEndPlugin<void> = {
             }
           })
       );
+      toolbarRegistry.addFactory('Notebook', 'save', () => {
+        return new ToolbarButton({
+          label: '',
+          icon: EverywhereIcons.save,
+          tooltip: 'Save this notebook',
+          onClick: () => {
+            void app.commands.execute(Commands.saveAndShareNotebookCommand);
+          }
+        });
+      });
       toolbarRegistry.addFactory(
         'Notebook',
         'jeKernelSwitcher',
