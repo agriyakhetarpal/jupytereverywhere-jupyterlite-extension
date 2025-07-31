@@ -255,7 +255,7 @@ test.describe('Sharing', () => {
     page
   }) => {
     await mockTokenRoute(page);
-    await mockShareNotebookResponse(page, 'test-save-triggered-share');
+    await mockShareNotebookResponse(page, 'e3b0c442-98fc-1fc2-9c9f-8b6d6ed08a1d');
 
     const saveButton = page.locator(
       '.jp-NotebookPanel-toolbar [data-jp-item-name="save"] .jp-ToolbarButtonComponent'
