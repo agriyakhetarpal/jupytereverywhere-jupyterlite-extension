@@ -250,6 +250,22 @@ test.describe('Sharing', () => {
     await expect(dialog).toBeVisible();
     expect(await dialog.screenshot()).toMatchSnapshot('share-dialog.png');
   });
+
+  test('Clicking the Save button should trigger share dialog in editable notebook', async ({
+    page
+  }) => {
+    await mockTokenRoute(page);
+    await mockShareNotebookResponse(page, 'test-save-triggered-share');
+
+    const saveButton = page.locator(
+      '.jp-NotebookPanel-toolbar [data-jp-item-name="save"] .jp-ToolbarButtonComponent'
+    );
+    await saveButton.click();
+
+    const dialog = page.locator('.jp-Dialog-content');
+    await expect(dialog).toBeVisible();
+    expect(await dialog.screenshot()).toMatchSnapshot('share-dialog.png');
+  });
 });
 
 test.describe('Download', () => {
