@@ -1,5 +1,5 @@
 import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
-import { INotebookTracker, INotebookWidgetFactory } from '@jupyterlab/notebook';
+import { INotebookTracker } from '@jupyterlab/notebook';
 import { INotebookContent } from '@jupyterlab/nbformat';
 import { SidebarIcon } from '../ui-components/SidebarIcon';
 import { EverywhereIcons } from '../icons';
@@ -35,12 +35,7 @@ function mapLanguageToKernel(content: INotebookContent): string {
 export const notebookPlugin: JupyterFrontEndPlugin<void> = {
   id: 'jupytereverywhere:notebook',
   autoStart: true,
-  requires: [
-    INotebookTracker,
-    IViewOnlyNotebookTracker,
-    INotebookWidgetFactory,
-    IToolbarWidgetRegistry
-  ],
+  requires: [INotebookTracker, IViewOnlyNotebookTracker, IToolbarWidgetRegistry],
   activate: (
     app: JupyterFrontEnd,
     tracker: INotebookTracker,
