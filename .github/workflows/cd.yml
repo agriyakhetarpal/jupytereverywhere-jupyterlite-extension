@@ -81,11 +81,14 @@ jobs:
           jlpm install
           jlpm build:all
 
-      - name: Upload JupyterLite app artifacts
+      - name: Create archive of JupyterLite app
+        run: tar -czf jupyterlite-app-release.tar.gz dist/
+
+      - name: Upload JupyterLite app artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: jupyterlite-app-release
-          path: ./dist
+          path: jupyterlite-app-release.tar.gz
           if-no-files-found: error
 
   release:
