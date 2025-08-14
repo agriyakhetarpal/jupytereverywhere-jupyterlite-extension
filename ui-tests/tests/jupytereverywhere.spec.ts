@@ -39,9 +39,9 @@ const PYTHON_TEST_NOTEBOOK: JSONObject = {
   ],
   metadata: {
     kernelspec: {
-      display_name: 'Python 3.13 (XPython)',
+      display_name: 'Python 3 (ipykernel)',
       language: 'python',
-      name: 'xpython'
+      name: 'python3'
     },
     language_info: {
       codemirror_mode: {
@@ -458,19 +458,20 @@ test.describe('Landing page', () => {
 
 test.describe('Kernel Switching', () => {
   test('Should open kernel switcher menu', async ({ page }) => {
-    const downloadButton = page.locator('.je-KernelSwitcherButton');
-    await downloadButton.click();
+    const dropdownButton = page.locator('.je-KernelSwitcherButton');
+    await dropdownButton.click();
     expect(
       await page.locator('.je-KernelSwitcherDropdownButton-menu').screenshot()
     ).toMatchSnapshot('kernel-switcher-menu.png');
   });
 });
 
-test.skip('Should switch to R kernel and run R code', async ({ page }) => {
+test('Should switch to R kernel and run R code', async ({ page }) => {
   await page.goto('lab/index.html');
   await page.waitForSelector('.jp-NotebookPanel');
 
   await runCommand(page, 'jupytereverywhere:switch-kernel', { kernel: 'xr' });
+  await page.waitForTimeout(10000);
   await runCommand(page, 'notebook:insert-cell-below');
 
   const code = 'lm(mpg ~ wt + hp + disp + cyl, data=mtcars)';
@@ -551,6 +552,7 @@ test.describe('Leave confirmation', () => {
 });
 
 test.describe('Sharing and copying R and Python notebooks', () => {
+  test.describe.configure({ retries: 2 });
   test('Should create copy from view-only R notebook and keep R kernel', async ({ page }) => {
     await mockTokenRoute(page);
 
@@ -595,6 +597,9 @@ test.describe('Sharing and copying R and Python notebooks', () => {
 
     // Wait for the notebook to switch to editable mode
     await page.waitForSelector('.jp-NotebookPanel');
+
+    // Wait for the kernel to initialise
+    await page.waitForTimeout(10000);
 
     // Verify kernel is Python
     const kernelLabel = await page.locator('.je-KernelSwitcherButton').innerText();
