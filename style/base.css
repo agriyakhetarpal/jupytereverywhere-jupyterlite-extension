@@ -122,7 +122,6 @@
 .jp-InputArea-prompt-indicator {
   left: 0;
   line-height: 25px;
-  transform: translateY(75%);
 }
 
 .jp-InputArea-prompt-indicator::before {
