@@ -622,7 +622,7 @@ test.describe('Leave confirmation', () => {
     const dialog = page.locator('.jp-Dialog');
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await dialog.locator('.jp-Dialog-close-button').click();
 
     await expect(page.locator('.jp-NotebookPanel')).toBeVisible();
     await expect(dialog).toHaveCount(0);
@@ -644,7 +644,7 @@ test.describe('Leave confirmation', () => {
     const dialog = page.locator('.jp-Dialog');
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'Yes' }).click();
+    await dialog.getByRole('button', { name: 'Save and leave', exact: true }).click();
 
     const shareDialog = page.locator('.jp-Dialog-content');
     await expect(shareDialog).toBeVisible();

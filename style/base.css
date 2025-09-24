@@ -68,6 +68,7 @@
 
 .jp-Dialog-footerButtons {
   text-align: center;
+  cursor: pointer;
 }
 
 .jp-Dialog {
@@ -86,6 +87,7 @@
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
+  cursor: pointer;
 }
 
 .jp-Dialog-header {
@@ -359,4 +361,23 @@ consistent with code cells */
 
 .je-LeaveDialog.jp-Dialog-body {
   order: 2;
+}
+
+/* we reserve space for the close button */
+@supports selector(:has(*)) {
+  .jp-Dialog-content:has(> .je-LeaveDialog.jp-Dialog-body) > .jp-Dialog-header {
+    padding-right: 28px;
+  }
+}
+
+.jp-Dialog.je-LeaveDialog-container .jp-Dialog-close-button,
+.jp-Dialog-content.je-LeaveDialog-container .jp-Dialog-close-button {
+  position: absolute;
+  top: -16px;
+  right: -8px;
+  transform: scale(calc(var(--je-scale) * 1.5));
+}
+
+.jp-Dialog .jp-Dialog-close-button .jp-Icon {
+  --jp-inverse-layout-color3: var(--je-slate-blue);
 }
