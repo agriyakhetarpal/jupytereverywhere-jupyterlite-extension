@@ -146,7 +146,8 @@
 
 .je-FileTile-action:focus-visible,
 .je-FileTile-box-hasActions:hover .je-FileTile-action {
-  opacity: 1;
+  visibility: visible;
+  transition-delay: 0ms;
   pointer-events: auto;
 }
 
