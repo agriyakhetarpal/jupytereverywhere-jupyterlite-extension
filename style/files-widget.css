@@ -134,6 +134,8 @@
     transform 60ms ease,
     visibility 0ms linear 120ms;
   z-index: 2;
+  background: #fff;
+  background-clip: padding-box;
 }
 
 .je-FileTile-action:hover {
@@ -157,6 +159,10 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+}
+
+.je-FileTile-box:hover {
+  background: rgb(65 44 136 / 8%);
 }
 
 .je-FileTile-box-hasActions .je-FileTile-download:active {
