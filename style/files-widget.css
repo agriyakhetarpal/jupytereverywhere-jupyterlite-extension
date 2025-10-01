@@ -61,10 +61,6 @@
   border-color: var(--je-slate-blue);
 }
 
-.je-FileTile-box:hover {
-  background: rgb(65 44 136 / 8%);
-}
-
 .je-FileTile-box svg {
   width: 48px;
   height: 48px;
@@ -130,19 +126,18 @@
   line-height: 0;
   outline: none;
   cursor: pointer; /* The pointer cursor is on the buttons only, not the tile. */
-  opacity: 0;
+  visibility: hidden;
+  opacity: 1;
   pointer-events: none;
   transition:
     background 120ms ease,
     transform 60ms ease,
-    opacity 120ms ease;
+    visibility 0ms linear 120ms;
   z-index: 2;
-  background: #fff;
-  background-clip: padding-box;
 }
 
 .je-FileTile-action:hover {
-  background: rgb(65 44 136 / 8%);
+  background: #d1bdf9;
 }
 
 .je-FileTile-action:active {
