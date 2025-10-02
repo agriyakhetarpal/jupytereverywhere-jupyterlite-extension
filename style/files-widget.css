@@ -156,9 +156,6 @@
 .je-FileTile-download {
   width: 36px;
   height: 36px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .je-FileTile-box:hover {
