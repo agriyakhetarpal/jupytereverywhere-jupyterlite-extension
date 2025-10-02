@@ -177,8 +177,8 @@
   transform: none;
 }
 
-.je-FileTile-box-hasActions .je-FileTile-delete:active {
-  transform: translateY(1px) !important;
+.je-FileTile-action.je-FileTile-delete:active {
+  transform: translateY(1px);
 }
 
 .je-FileTile-action svg {
