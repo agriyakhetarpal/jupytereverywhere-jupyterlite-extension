@@ -184,6 +184,16 @@
   display: block;
 }
 
+.je-FileTile-box-hasActions:hover svg {
+  filter: blur(2px);
+  transition: filter 0.2s ease;
+}
+
+.je-FileTile-box-hasActions:hover .je-FileTile-action svg {
+  filter: none;
+  transition: none;
+}
+
 .je-FileTile-action svg > path {
   --jp-inverse-layout-color3: var(--je-slate-blue) !important;
 }
