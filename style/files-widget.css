@@ -165,8 +165,8 @@
   background: rgb(65 44 136 / 8%);
 }
 
-.je-FileTile-box-hasActions .je-FileTile-download:active {
-  transform: translate(-50%, -50%) translateY(0.5px) !important;
+.je-FileTile-action.je-FileTile-download:active {
+  transform: translate(-50%, -50%) translateY(0.5px);
 }
 
 .je-FileTile-delete {
