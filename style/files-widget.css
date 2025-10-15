@@ -154,9 +154,9 @@
 
 .je-FileMenu-dropdown {
   position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
   background: white;
   border: 2px solid var(--je-slate-blue);
   border-radius: var(--je-round-corners);
