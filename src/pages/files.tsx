@@ -9,7 +9,7 @@ import { PageTitle } from '../ui-components/PageTitle';
 import { EverywhereIcons } from '../icons';
 import { FilesWarningBanner } from '../ui-components/FilesWarningBanner';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { LabIcon, closeIcon, downloadIcon } from '@jupyterlab/ui-components';
+import { LabIcon } from '@jupyterlab/ui-components';
 
 /**
  * File type icons mapping function. We currently implement four common file types:
@@ -149,6 +149,75 @@ const FileUploader = React.forwardRef<IFileUploaderRef, IFileUploaderProps>((pro
 });
 
 FileUploader.displayName = 'FileUploader';
+
+/**
+ * Component for the ellipsis menu dropdown for each file.
+ */
+interface IFileMenuProps {
+  model: Contents.IModel;
+  onDownload: (model: Contents.IModel) => void;
+  onDelete: (model: Contents.IModel) => void;
+}
+
+function FileMenu(props: IFileMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // We'll close the menu when clicking outside the component.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    props.onDownload(props.model);
+    setIsOpen(false);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    props.onDelete(props.model);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="je-FileMenu" ref={menuRef}>
+      <button
+        className="je-FileMenu-trigger"
+        aria-label={`Options for ${props.model.name}`}
+        onClick={handleMenuClick}
+      >
+        <EverywhereIcons.ellipsis.react />
+      </button>
+      {isOpen && (
+        <div className="je-FileMenu-dropdown">
+          <button className="je-FileMenu-item" onClick={handleDownload}>
+            Download
+          </button>
+          <button className="je-FileMenu-item" onClick={handleDelete}>
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * The main Files page component. It manages the state of uploaded files,
@@ -352,32 +421,8 @@ function FilesApp(props: IFilesAppProps) {
                 const fileIcon = getFileIcon(f.name, f.mimetype ?? '');
                 return (
                   <div className="je-FileTile" key={f.path}>
-                    <div className="je-FileTile-box je-FileTile-box-hasActions">
-                      {/* Delete (X) button */}
-                      <button
-                        className="je-FileTile-action je-FileTile-delete"
-                        aria-label={`Delete ${f.name}`}
-                        title="Delete"
-                        onClick={e => {
-                          e.stopPropagation();
-                          void deleteFile(f);
-                        }}
-                      >
-                        <closeIcon.react tag="span" />
-                      </button>
-                      {/* Download (↓) button */}
-                      <button
-                        className="je-FileTile-action je-FileTile-download"
-                        aria-label={`Download ${f.name}`}
-                        title="Download"
-                        onClick={e => {
-                          e.stopPropagation();
-                          void downloadFile(f);
-                        }}
-                      >
-                        <downloadIcon.react tag="span" />
-                      </button>
-
+                    <div className="je-FileTile-box je-FileTile-box-hasMenu">
+                      <FileMenu model={f} onDownload={downloadFile} onDelete={deleteFile} />
                       <fileIcon.react />
                     </div>
                     <div className="je-FileTile-label">{f.name}</div>

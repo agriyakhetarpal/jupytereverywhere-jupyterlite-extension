@@ -108,92 +108,87 @@
   line-height: 1.5;
 }
 
-/* Styling for the action buttons on each file tile. */
+/* Styling for the ellipsis menu on each file tile. */
 
-.je-FileTile-box-hasActions {
+.je-FileTile-box-hasMenu {
   position: relative;
   isolation: isolate;
 }
 
-.je-FileTile-action {
+.je-FileMenu {
   position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
+
+.je-FileMenu-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--je-slate-blue);
-  border-radius: var(--je-round-corners-filetiles) !important;
-  box-sizing: border-box;
-  line-height: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
   outline: none;
-  cursor: pointer; /* The pointer cursor is on the buttons only, not the tile. */
-  visibility: hidden;
-  opacity: 1;
-  pointer-events: none;
-  transition:
-    background 120ms ease,
-    transform 60ms ease,
-    visibility 0ms linear 120ms;
-  z-index: 2;
-  background: #fff;
-  background-clip: padding-box;
+  border-radius: var(--je-round-corners-filetiles);
+  transition: background 120ms ease;
 }
 
-.je-FileTile-action:hover {
-  background: #d1bdf9;
+.je-FileMenu-trigger:hover {
+  background: rgb(255 140 0 / 15%);
 }
 
-.je-FileTile-action:active {
-  transform: none !important;
+.je-FileMenu-trigger:active {
+  background: rgb(255 140 0 / 25%);
 }
 
-.je-FileTile-action:focus-visible,
-.je-FileTile-box-hasActions:hover .je-FileTile-action {
-  visibility: visible;
-  transition-delay: 0ms;
-  pointer-events: auto;
+.je-FileMenu-trigger svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  color: #ff8c00;
 }
 
-.je-FileTile-download {
-  width: 36px;
-  height: 36px;
+.je-FileMenu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 2px solid var(--je-slate-blue);
+  border-radius: var(--je-round-corners);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  min-width: 120px;
+  overflow: hidden;
+  z-index: 3;
 }
 
-.je-FileTile-box:hover {
+.je-FileMenu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: white;
+  color: var(--je-slate-blue);
+  font-size: calc(var(--je-scale) * 18px);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+  font-family: var(--je-font-family);
+}
+
+.je-FileMenu-item:hover {
   background: rgb(65 44 136 / 8%);
 }
 
-.je-FileTile-action.je-FileTile-download:active {
-  transform: translateY(0.5px);
+.je-FileMenu-item:active {
+  background: rgb(65 44 136 / 15%);
 }
 
-.je-FileTile-delete {
-  width: 24px;
-  height: 24px;
-  top: 6px;
-  right: 6px;
-  transform: none;
-}
-
-.je-FileTile-action.je-FileTile-delete:active {
-  transform: translateY(1px);
-}
-
-.je-FileTile-action svg {
-  width: 16px;
-  height: 16px;
-  display: block;
-}
-
-.je-FileTile-box-hasActions:hover svg {
-  filter: blur(2px);
-  transition: filter 0.2s ease;
-}
-
-.je-FileTile-box-hasActions:hover .je-FileTile-action svg {
-  filter: none;
-  transition: none;
-}
-
-.je-FileTile-action svg > path {
-  --jp-inverse-layout-color3: var(--je-slate-blue) !important;
+.je-FileMenu-item + .je-FileMenu-item {
+  border-top: 1px solid rgb(65 44 136 / 15%);
 }
