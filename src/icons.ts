@@ -29,7 +29,7 @@ import fastForwardSvg from '../style/icons/fast-forward.svg';
 import ellipsisSvg from '../style/icons/ellipsis.svg';
 import downloadCaretSvg from '../style/icons/download-caret.svg';
 import kernelCaretSvg from '../style/icons/kernel-caret.svg';
-import dropdownCaretSvg from '../style/icons/dropdown-caret.svg';
+import dropdownTriangleSvg from '../style/icons/dropdown-triangle.svg';
 import imageIconSvg from '../style/icons/image-icon.svg';
 import fileIconSvg from '../style/icons/file-icon.svg';
 import helpSvg from '../style/icons/help.svg';
@@ -113,9 +113,9 @@ export namespace EverywhereIcons {
     name: 'everywhere:kernelcaret',
     svgstr: kernelCaretSvg
   });
-  export const dropdownCaret = new LabIcon({
-    name: 'everywhere:dropdown-caret',
-    svgstr: dropdownCaretSvg
+  export const dropdownTriangle = new LabIcon({
+    name: 'everywhere:dropdown-triangle',
+    svgstr: dropdownTriangleSvg
   });
   export const imageIcon = new LabIcon({
     name: 'everywhere:image-icon',
