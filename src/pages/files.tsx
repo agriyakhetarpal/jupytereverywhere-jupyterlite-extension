@@ -246,10 +246,41 @@ function FilesApp(props: IFilesAppProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [gridColumns] = useState(1);
 
+  // Preserve file order across file renames.
+  const [orderMap, setOrderMap] = useState<Map<string, number>>(new Map());
+
   const refreshListing = useCallback(async () => {
     try {
       const dirListing = await props.contentsManager.get('', { content: true });
       setListing(dirListing);
+
+      if (dirListing.type === 'directory') {
+        const items = dirListing.content as Contents.IModel[];
+        setOrderMap(prev => {
+          const next = new Map(prev);
+
+          for (const key of Array.from(next.keys())) {
+            if (!items.some(i => i.path === key)) {
+              next.delete(key);
+            }
+          }
+
+          let max = -1;
+          for (const v of next.values()) {
+            if (v > max) {
+              max = v;
+            }
+          }
+
+          items.forEach((it, idx) => {
+            if (!next.has(it.path)) {
+              next.set(it.path, ++max >= 0 ? max : idx);
+            }
+          });
+
+          return next;
+        });
+      }
     } catch (err) {
       await showErrorMessage(
         'Error loading files',
@@ -427,7 +458,19 @@ function FilesApp(props: IFilesAppProps) {
         const newPath = (dirname ? `${dirname}/` : '') + finalName;
 
         try {
+          const oldPath = model.path;
           await props.contentsManager.rename(model.path, newPath);
+
+          setOrderMap(prev => {
+            const next = new Map(prev);
+            const pos = next.get(oldPath);
+            if (typeof pos === 'number') {
+              next.delete(oldPath);
+              next.set(newPath, pos);
+            }
+            return next;
+          });
+
           await refreshListing();
           return;
         } catch (err) {
@@ -489,7 +532,21 @@ function FilesApp(props: IFilesAppProps) {
           {/* File thumbnails, and the rest of the tiles. */}
           {listing &&
             listing.type === 'directory' &&
-            (listing.content as Contents.IModel[])
+            [...(listing.content as Contents.IModel[])]
+              .sort((a, b) => {
+                const orderOfa = orderMap.get(a.path);
+                const orderOfb = orderMap.get(b.path);
+                if (orderOfa === null && orderOfb === null) {
+                  return 0;
+                }
+                if (orderOfa === null) {
+                  return 1;
+                }
+                if (orderOfb === null) {
+                  return -1;
+                }
+                return (orderOfa ?? 0) - (orderOfb ?? 0);
+              })
               .filter(f => {
                 return (
                   f.type === 'file' &&
