@@ -10,7 +10,6 @@ import { EverywhereIcons } from '../icons';
 import { FilesWarningBanner } from '../ui-components/FilesWarningBanner';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { createPortal } from 'react-dom';
 
 /**
  * File type icons mapping function. We currently implement four common file types:
@@ -162,76 +161,16 @@ interface IFileMenuProps {
 
 function FileMenu(props: IFileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // We'll close the menu when clicking outside the component.
-  useEffect(() => {
-    if (!isOpen || !triggerRef.current) {
-      return;
-    }
-
-    const updatePosition = () => {
-      if (!triggerRef.current) {
-        return;
-      }
-
-      const triggerRect = triggerRef.current.getBoundingClientRect();
-      const dropdownWidth = 120;
-      const dropdownHeight = 90;
-      const padding = 8;
-
-      const spaceAbove = triggerRect.top;
-      const spaceBelow = window.innerHeight - triggerRect.bottom;
-      const spaceRight = window.innerWidth - triggerRect.right;
-
-      let top = 0;
-      let left = 0;
-
-      // We prefer positioning above and to the right (with the ellipsis at bottom-left of the dropdown).
-      // This needs to fit in the viewport; otherwise, we try below/right, above/left, below/left.
-      // FIXME: Right now this is pretty unreadable; gotta clean it up later.
-      if (spaceAbove >= dropdownHeight + padding && spaceRight >= dropdownWidth) {
-        top = triggerRect.top - dropdownHeight - 4;
-        left = triggerRect.left;
-      } else if (spaceBelow >= dropdownHeight + padding && spaceRight >= dropdownWidth) {
-        top = triggerRect.bottom + 4;
-        left = triggerRect.left;
-      } else if (spaceAbove >= dropdownHeight + padding) {
-        top = triggerRect.top - dropdownHeight - 4;
-        left = triggerRect.right - dropdownWidth;
-      } else {
-        top = triggerRect.bottom + 4;
-        left = triggerRect.right - dropdownWidth;
-      }
-
-      setPosition({ top, left });
-    };
-
-    updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-
-    return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
-
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -260,32 +199,22 @@ function FileMenu(props: IFileMenuProps) {
   return (
     <div className="je-FileMenu" ref={menuRef}>
       <button
-        ref={triggerRef}
         className="je-FileMenu-trigger"
         aria-label={`Options for ${props.model.name}`}
         onClick={handleMenuClick}
       >
         <EverywhereIcons.ellipsis.react />
       </button>
-      {isOpen &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            className="je-FileMenu-dropdown"
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`
-            }}
-          >
-            <button className="je-FileMenu-item" onClick={handleDownload}>
-              Download
-            </button>
-            <button className="je-FileMenu-item" onClick={handleDelete}>
-              Delete
-            </button>
-          </div>,
-          document.body
-        )}
+      {isOpen && (
+        <div className="je-FileMenu-dropdown">
+          <button className="je-FileMenu-item" onClick={handleDownload}>
+            Download
+          </button>
+          <button className="je-FileMenu-item" onClick={handleDelete}>
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -303,6 +232,28 @@ function FilesApp(props: IFilesAppProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const fileUploaderRef = useRef<IFileUploaderRef>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [gridColumns, setGridColumns] = useState(1);
+
+  // Calculate the number of columns in the grid based on the container width.
+  // We use cols = floor((containerWidth + gap) / (tileWidth + gap)), where
+  // the gap is the padding between tiles, and the container width is the
+  // width of the grid container.
+  useEffect(() => {
+    const calculateColumns = () => {
+      if (gridRef.current) {
+        const gridWidth = gridRef.current.offsetWidth;
+        const tileWidth = 100;
+        const gap = 16;
+        const cols = Math.floor((gridWidth + gap) / (tileWidth + gap));
+        setGridColumns(Math.max(1, cols));
+      }
+    };
+
+    calculateColumns();
+    window.addEventListener('resize', calculateColumns);
+    return () => window.removeEventListener('resize', calculateColumns);
+  }, []);
 
   const refreshListing = useCallback(async () => {
     try {
@@ -454,7 +405,7 @@ function FilesApp(props: IFilesAppProps) {
         contentsManager={props.contentsManager}
       />
       <div className="je-FilesApp-content">
-        <div className="je-FilesApp-grid">
+        <div className="je-FilesApp-grid" ref={gridRef}>
           {/* "add new" tile */}
           <div className="je-FileTile">
             <div
@@ -488,10 +439,25 @@ function FilesApp(props: IFilesAppProps) {
                   } as File)
                 );
               })
-              .map(f => {
+              .map((f, index) => {
                 const fileIcon = getFileIcon(f.name, f.mimetype ?? '');
+                // The "add new" tile sits at the zeroth index, so we offset by 1.
+                // We use this to determine if we are in the rightmost column.
+                // If so, we add a special data attribute to the tile, which is
+                // used in CSS to remove the right margin. This is to avoid users
+                // from adding horizontal scrolling by accident.
+                const totalIndex = index + 1;
+                const row = Math.floor(totalIndex / gridColumns);
+                const col = totalIndex % gridColumns;
+                const isRightColumn = col === gridColumns - 1;
+
                 return (
-                  <div className="je-FileTile" key={f.path}>
+                  <div
+                    className="je-FileTile"
+                    key={f.path}
+                    data-row={row}
+                    data-col-right={isRightColumn ? 'true' : 'false'}
+                  >
                     <div className="je-FileTile-box je-FileTile-box-hasMenu">
                       <FileMenu model={f} onDownload={downloadFile} onDelete={deleteFile} />
                       <fileIcon.react />

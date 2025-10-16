@@ -40,6 +40,22 @@
   align-items: center;
   text-align: center;
   font-family: var(--je-font-family);
+  position: relative;
+}
+
+/* Positioning for file menu dropdowns, based on the grid layout */
+
+.je-FileTile[data-row='0'] .je-FileMenu-dropdown,
+.je-FileTile[data-row='1'] .je-FileMenu-dropdown {
+  top: 100%;
+  bottom: auto;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.je-FileTile[data-col-right='true'] .je-FileMenu-dropdown {
+  left: auto;
+  right: 0;
 }
 
 .je-FileTile-box {
@@ -59,6 +75,11 @@
 
 .je-FileTile-box-addNew {
   border-color: var(--je-slate-blue);
+  cursor: pointer;
+}
+
+.je-FileTile-box-addNew:hover {
+  background: rgb(65 44 136 / 8%);
 }
 
 .je-FileTile-box svg {
@@ -112,14 +133,20 @@
 
 .je-FileTile-box-hasMenu {
   position: relative;
-  isolation: isolate;
+}
+
+/* When the dropdown is opened, we raise the z-index of the tile to ensure
+that the dropdown is not clipped by neighbouring tiles. */
+.je-FileTile:has(.je-FileMenu-dropdown) {
+  z-index: 1000;
+  position: relative;
 }
 
 .je-FileMenu {
   position: absolute;
   top: 2px;
   right: 6px;
-  z-index: 100;
+  z-index: 2;
 }
 
 .je-FileMenu-trigger {
@@ -135,8 +162,6 @@
   outline: none;
   border-radius: var(--je-round-corners-filetiles);
   transition: background 120ms ease;
-  position: relative;
-  z-index: 100;
 }
 
 .je-FileMenu-trigger:hover {
@@ -155,14 +180,17 @@
 }
 
 .je-FileMenu-dropdown {
-  position: fixed;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
   background: white;
   border: 2px solid var(--je-slate-blue);
   border-radius: var(--je-round-corners);
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
   min-width: 120px;
-  overflow: hidden;
-  z-index: 9999;
+  overflow: visible;
+  z-index: 3;
 }
 
 .je-FileMenu-item {
@@ -178,6 +206,20 @@
   cursor: pointer;
   transition: background 120ms ease;
   font-family: var(--je-font-family);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* The border radius is not being respected in the dropdown menu, so we work around this
+by applying the border radius to the first and last items. We subtract 2px to account
+for the border width of the dropdown itself. */
+
+.je-FileMenu-item:first-child {
+  border-radius: calc(var(--je-round-corners) - 2px) calc(var(--je-round-corners) - 2px) 0 0;
+}
+
+.je-FileMenu-item:last-child {
+  border-radius: 0 0 calc(var(--je-round-corners) - 2px) calc(var(--je-round-corners) - 2px);
 }
 
 .je-FileMenu-item:hover {
