@@ -216,10 +216,6 @@ that the dropdown is not clipped by neighbouring tiles. */
   right: 0;
 }
 
-.je-FileMenu-item {
-  border-top: 1px solid rgb(65 44 136 / 15%);
-}
-
 /* The border radius is not being respected in the dropdown menu, so we work around this
 by applying the border radius to the first and last items. We subtract 2px to account
 for the border width of the dropdown itself. */
