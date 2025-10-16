@@ -43,21 +43,6 @@
   position: relative;
 }
 
-/* Positioning for file menu dropdowns, based on the grid layout */
-
-.je-FileTile[data-row='0'] .je-FileMenu-dropdown,
-.je-FileTile[data-row='1'] .je-FileMenu-dropdown {
-  top: 100%;
-  bottom: auto;
-  margin-top: 4px;
-  margin-bottom: 0;
-}
-
-.je-FileTile[data-col-right='true'] .je-FileMenu-dropdown {
-  left: auto;
-  right: 0;
-}
-
 .je-FileTile-box {
   width: 100px;
   height: 100px;
@@ -208,6 +193,21 @@ that the dropdown is not clipped by neighbouring tiles. */
   font-family: var(--je-font-family);
   white-space: nowrap;
   box-sizing: border-box;
+}
+
+/* Positioning for file menu dropdowns, based on the grid layout */
+
+.je-FileTile[data-row='0'] .je-FileMenu-dropdown,
+.je-FileTile[data-row='1'] .je-FileMenu-dropdown {
+  top: 100%;
+  bottom: auto;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.je-FileTile[data-col-right='true'] .je-FileMenu-dropdown {
+  left: auto;
+  right: 0;
 }
 
 /* The border radius is not being respected in the dropdown menu, so we work around this
