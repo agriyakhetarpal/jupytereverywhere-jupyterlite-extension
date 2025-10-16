@@ -386,7 +386,7 @@ test.describe('Files', () => {
     await expect(page.locator('.je-FileTile-label', { hasText: 'c-flower.webp' })).toBeVisible();
   });
 
-  test('Hovering a file tile shows close and download actions', async ({ page }) => {
+  test('Clicking ellipsis shows dropdown menu with actions', async ({ page }) => {
     await page.locator('.jp-SideBar').getByTitle('Files').click();
 
     await page.locator('.je-FileTile').first().click();
@@ -398,15 +398,24 @@ test.describe('Files', () => {
     });
     await tile.waitFor();
 
-    // Hover to reveal the actions
-    await tile.hover();
-    await expect(tile.locator('.je-FileTile-action--close')).toBeVisible();
-    await expect(tile.locator('.je-FileTile-action--download')).toBeVisible();
+    // Click the ellipsis to open the menu
+    const ellipsisButton = tile.locator('.je-FileMenu-trigger');
+    await ellipsisButton.click();
 
-    expect(await tile.screenshot()).toMatchSnapshot('file-tile-actions-visible.png');
+    // Check that the dropdown menu is visible
+    const dropdown = page.locator('.je-FileMenu-dropdown');
+    await expect(dropdown).toBeVisible();
+    await expect(dropdown.locator('.je-FileMenu-item', { hasText: 'Download' })).toBeVisible();
+    await expect(dropdown.locator('.je-FileMenu-item', { hasText: 'Delete' })).toBeVisible();
+
+    await page.addStyleTag({
+      content: '.je-FileMenu-dropdown { box-shadow: none !important; }'
+    });
+
+    expect(await dropdown.screenshot()).toMatchSnapshot('file-menu-dropdown.png');
   });
 
-  test('Clicking the X (close) action deletes the file tile', async ({ page }) => {
+  test('Clicking Delete in the menu deletes the file tile', async ({ page }) => {
     await page.locator('.jp-SideBar').getByTitle('Files').click();
 
     await page.locator('.je-FileTile').first().click();
@@ -417,13 +426,18 @@ test.describe('Files', () => {
     await label.waitFor({ state: 'visible' });
 
     const tile = page.locator('.je-FileTile', { has: label });
-    await tile.hover();
-    await tile.locator('.je-FileTile-action--close').click();
+
+    // Click ellipsis to open menu
+    await tile.locator('.je-FileMenu-trigger').click();
+
+    // Click Delete button in dropdown
+    const dropdown = page.locator('.je-FileMenu-dropdown');
+    await dropdown.locator('.je-FileMenu-item', { hasText: 'Delete' }).click();
 
     await expect(label).toHaveCount(0);
   });
 
-  test('Clicking the ⭳ (download) action downloads the file', async ({ page }) => {
+  test('Clicking Download in the menu downloads the file', async ({ page }) => {
     await page.locator('.jp-SideBar').getByTitle('Files').click();
 
     await page.locator('.je-FileTile').first().click();
@@ -434,9 +448,14 @@ test.describe('Files', () => {
     await label.waitFor({ state: 'visible' });
 
     const tile = page.locator('.je-FileTile', { has: label });
-    await tile.hover();
+
+    // Click ellipsis to open menu
+    await tile.locator('.je-FileMenu-trigger').click();
+
+    // Click Download button in dropdown
+    const dropdown = page.locator('.je-FileMenu-dropdown');
     const downloadPromise = page.waitForEvent('download');
-    await tile.locator('.je-FileTile-action--download').click();
+    await dropdown.locator('.je-FileMenu-item', { hasText: 'Download' }).click();
     const download = await downloadPromise;
 
     const filePath = await download.path();

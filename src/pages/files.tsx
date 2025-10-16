@@ -8,8 +8,8 @@ import { SidebarIcon } from '../ui-components/SidebarIcon';
 import { PageTitle } from '../ui-components/PageTitle';
 import { EverywhereIcons } from '../icons';
 import { FilesWarningBanner } from '../ui-components/FilesWarningBanner';
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { LabIcon, closeIcon, downloadIcon } from '@jupyterlab/ui-components';
+import React, { useId, useState, useRef, useCallback, useEffect } from 'react';
+import { LabIcon } from '@jupyterlab/ui-components';
 
 /**
  * File type icons mapping function. We currently implement four common file types:
@@ -151,6 +151,134 @@ const FileUploader = React.forwardRef<IFileUploaderRef, IFileUploaderProps>((pro
 FileUploader.displayName = 'FileUploader';
 
 /**
+ * Component for the ellipsis menu dropdown for each file.
+ */
+interface IFileMenuProps {
+  model: Contents.IModel;
+  onDownload: (model: Contents.IModel) => void;
+  onDelete: (model: Contents.IModel) => void;
+}
+
+function FileMenu(props: IFileMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const triggerId = useId();
+  const menuItemsRef = useRef<HTMLButtonElement[]>([]);
+
+  // We'll close the menu when clicking outside the component.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const activeElement = document.activeElement;
+        const currentIndex = menuItemsRef.current.findIndex(item => item === activeElement);
+
+        let nextIndex: number;
+        if (e.key === 'ArrowDown') {
+          nextIndex = currentIndex < menuItemsRef.current.length - 1 ? currentIndex + 1 : 0;
+        } else {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : menuItemsRef.current.length - 1;
+        }
+
+        menuItemsRef.current[nextIndex]?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Focus the first menu item when the menu opens.
+    menuItemsRef.current[0]?.focus();
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isOpen && menuRef.current) {
+      const fileTile = menuRef.current.closest('.je-FileTile');
+      if (fileTile) {
+        fileTile.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }
+
+    setIsOpen(!isOpen);
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    props.onDownload(props.model);
+    setIsOpen(false);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    props.onDelete(props.model);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="je-FileMenu" ref={menuRef}>
+      <button
+        className="je-FileMenu-trigger"
+        id={triggerId}
+        aria-label={`Options for ${props.model.name}`}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-expanded={isOpen}
+        onClick={handleMenuClick}
+      >
+        {isOpen ? <EverywhereIcons.dropdownTriangle.react /> : <EverywhereIcons.ellipsis.react />}
+      </button>
+      {isOpen && (
+        <div className="je-FileMenu-dropdown" id={menuId} role="menu" aria-labelledby={triggerId}>
+          <button
+            ref={el => el && (menuItemsRef.current[0] = el)}
+            className="je-FileMenu-item"
+            onClick={handleDownload}
+            role="menuitem"
+          >
+            Download
+          </button>
+          <button
+            ref={el => el && (menuItemsRef.current[1] = el)}
+            className="je-FileMenu-item"
+            onClick={handleDelete}
+            role="menuitem"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * The main Files page component. It manages the state of uploaded files,
  * handles file uploads, and renders the file thumbnails.
  */
@@ -163,6 +291,26 @@ function FilesApp(props: IFilesAppProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const fileUploaderRef = useRef<IFileUploaderRef>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [gridColumns, setGridColumns] = useState(1);
+
+  useEffect(() => {
+    if (!gridRef.current) {
+      return;
+    }
+
+    const updateColumns = () => {
+      const gridComputedStyle = window.getComputedStyle(gridRef.current!);
+      const gridTemplateColumns = gridComputedStyle.gridTemplateColumns;
+      const columns = gridTemplateColumns.split(' ').length;
+      setGridColumns(columns);
+    };
+
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+
+    return () => window.removeEventListener('resize', updateColumns);
+  }, [listing?.content?.length]);
 
   const refreshListing = useCallback(async () => {
     try {
@@ -314,7 +462,7 @@ function FilesApp(props: IFilesAppProps) {
         contentsManager={props.contentsManager}
       />
       <div className="je-FilesApp-content">
-        <div className="je-FilesApp-grid">
+        <div className="je-FilesApp-grid" ref={gridRef}>
           {/* "add new" tile */}
           <div className="je-FileTile">
             <div
@@ -348,38 +496,29 @@ function FilesApp(props: IFilesAppProps) {
                   } as File)
                 );
               })
-              .map(f => {
+              .map((f, index) => {
                 const fileIcon = getFileIcon(f.name, f.mimetype ?? '');
-                return (
-                  <div className="je-FileTile" key={f.path}>
-                    <div className="je-FileTile-box je-FileTile-box-hasActions">
-                      <div className="je-FileTile-actions">
-                        {/* Delete (X) button */}
-                        <button
-                          className="je-FileTile-action je-FileTile-action--close"
-                          aria-label={`Delete ${f.name}`}
-                          title="Delete"
-                          onClick={e => {
-                            e.stopPropagation();
-                            void deleteFile(f);
-                          }}
-                        >
-                          <closeIcon.react tag="span" />
-                        </button>
+                // The "add new" tile sits at the zeroth index, so we offset by 1.
+                // We use this to determine if we are in the rightmost column.
+                // If so, we add a special data attribute to the tile, which is
+                // used in CSS to remove the right margin. This is to avoid users
+                // from adding horizontal scrolling by accident.
+                const totalIndex = index + 1;
+                const row = Math.floor(totalIndex / gridColumns);
+                const col = totalIndex % gridColumns;
+                const isRightColumn = col === gridColumns - 1;
+                const isLeftColumn = col === 0;
 
-                        {/* Download (↓) button */}
-                        <button
-                          className="je-FileTile-action je-FileTile-action--download"
-                          aria-label={`Download ${f.name}`}
-                          title="Download"
-                          onClick={e => {
-                            e.stopPropagation();
-                            void downloadFile(f);
-                          }}
-                        >
-                          <downloadIcon.react tag="span" />
-                        </button>
-                      </div>
+                return (
+                  <div
+                    className="je-FileTile"
+                    key={f.path}
+                    data-row={row}
+                    data-col-right={isRightColumn ? 'true' : 'false'}
+                    data-col-left={isLeftColumn ? 'true' : 'false'}
+                  >
+                    <div className="je-FileTile-box je-FileTile-box-hasMenu">
+                      <FileMenu model={f} onDownload={downloadFile} onDelete={deleteFile} />
                       <fileIcon.react />
                     </div>
                     <div className="je-FileTile-label">{f.name}</div>

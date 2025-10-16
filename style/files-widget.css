@@ -40,6 +40,7 @@
   align-items: center;
   text-align: center;
   font-family: var(--je-font-family);
+  position: relative;
 }
 
 .je-FileTile-box {
@@ -59,22 +60,20 @@
 
 .je-FileTile-box-addNew {
   border-color: var(--je-slate-blue);
+  cursor: pointer;
 }
 
-.je-FileTile-box:hover {
-  background: #e8e3e3;
-  cursor: pointer;
+.je-FileTile-box-addNew:hover {
+  background: rgb(65 44 136 / 8%);
 }
 
 .je-FileTile-box svg {
   width: 48px;
   height: 48px;
-}
 
-.je-FileTile-actions svg {
-  width: 16px;
-  height: 16px;
-  display: block; /* there is a baseline offset inside the button which I am not sure of */
+  /* Ensure the file glyph sits below overlay buttons */
+  position: relative;
+  z-index: 0;
 }
 
 .je-FileTile-label {
@@ -115,71 +114,118 @@
   line-height: 1.5;
 }
 
-/* Styling for the action buttons on each file tile. */
+/* Styling for the ellipsis menu on each file tile. */
 
-.je-FileTile-box-hasActions {
+.je-FileTile-box-hasMenu {
   position: relative;
-  isolation: isolate;
 }
 
-.je-FileTile-actions {
+/* When the dropdown is opened, we raise the z-index of the tile to ensure
+that the dropdown is not clipped by neighbouring tiles. */
+.je-FileTile:has(.je-FileMenu-dropdown) {
+  z-index: 1000;
+  position: relative;
+}
+
+.je-FileMenu {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
+  top: 2px;
+  right: 6px;
   z-index: 2;
 }
 
-.je-FileTile-box-hasActions:hover .je-FileTile-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.je-FileTile-action {
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
+.je-FileMenu-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  border-radius: var(--je-round-corners-filetiles);
+  transition: background 120ms ease;
+}
+
+.je-FileMenu-trigger:hover {
+  background: rgb(255 140 0 / 15%);
+}
+
+.je-FileMenu-trigger:active {
+  background: rgb(255 140 0 / 25%);
+}
+
+.je-FileMenu-trigger svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  color: #ff8c00;
+}
+
+/* Make the dropdown triangle smaller than the ellipsis. We scale to 75%. */
+.je-FileMenu-trigger svg[data-icon='everywhere:dropdown-triangle'] {
+  width: 16px;
+  height: 16px;
+}
+
+.je-FileMenu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: white;
   border: 2px solid var(--je-slate-blue);
-  border-radius: var(--je-round-corners-filetiles) !important;
+  border-radius: var(--je-round-corners);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  min-width: 120px;
+  overflow: hidden;
+  z-index: 3;
+}
+
+.je-FileMenu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
   background: white;
   color: var(--je-slate-blue);
-  font-weight: 700;
+  font-size: calc(var(--je-scale) * 18px);
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  padding: 0;
-  outline: none;
-  transition:
-    background 120ms ease,
-    transform 60ms ease;
-
-  /* center inline SVG, there is a baseline offset inside the button which I am not sure of */
-  line-height: 0;
+  transition: background 120ms ease;
+  font-family: var(--je-font-family);
+  white-space: nowrap;
   box-sizing: border-box;
 }
 
-.je-FileTile-action:hover {
-  background: rgb(65 44 136 / 8%); /* a slightly faint tint */
+/* Positioning for file menu dropdowns, based on the grid layout */
+
+.je-FileTile[data-row='0'] .je-FileMenu-dropdown,
+.je-FileTile[data-row='1'] .je-FileMenu-dropdown {
+  top: 100%;
+  bottom: auto;
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 
-.je-FileTile-action:active {
-  transform: translateY(1px);
+.je-FileTile[data-col-right='true'] .je-FileMenu-dropdown {
+  left: auto;
+  right: 0;
 }
 
-.je-FileTile-action > span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+.je-FileTile[data-col-left='true'] .je-FileMenu-dropdown {
+  left: 0;
+  right: auto;
 }
 
-.je-FileTile-actions svg > path {
-  --jp-inverse-layout-color3: var(--je-slate-blue) !important;
+.je-FileMenu-item:hover,
+.je-FileMenu-item:focus {
+  background: rgb(65 44 136 / 8%);
+}
+
+.je-FileMenu-item:active {
+  background: rgb(65 44 136 / 15%);
 }
