@@ -119,7 +119,7 @@
   position: absolute;
   top: 2px;
   right: 6px;
-  z-index: 2;
+  z-index: 100;
 }
 
 .je-FileMenu-trigger {
@@ -135,6 +135,8 @@
   outline: none;
   border-radius: var(--je-round-corners-filetiles);
   transition: background 120ms ease;
+  position: relative;
+  z-index: 100;
 }
 
 .je-FileMenu-trigger:hover {
@@ -153,17 +155,14 @@
 }
 
 .je-FileMenu-dropdown {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 4px;
+  position: fixed;
   background: white;
   border: 2px solid var(--je-slate-blue);
   border-radius: var(--je-round-corners);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
   min-width: 120px;
   overflow: hidden;
-  z-index: 3;
+  z-index: 9999;
 }
 
 .je-FileMenu-item {
