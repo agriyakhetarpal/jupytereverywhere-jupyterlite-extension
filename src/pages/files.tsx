@@ -6,6 +6,7 @@ import { IContentsManager } from '@jupyterlab/services';
 import { Commands } from '../commands';
 import { SidebarIcon } from '../ui-components/SidebarIcon';
 import { PageTitle } from '../ui-components/PageTitle';
+import { openRenameDialog } from '../ui-components/rename-dialog';
 import { EverywhereIcons } from '../icons';
 import { FilesWarningBanner } from '../ui-components/FilesWarningBanner';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -155,6 +156,7 @@ FileUploader.displayName = 'FileUploader';
  */
 interface IFileMenuProps {
   model: Contents.IModel;
+  onRename: (model: Contents.IModel) => void;
   onDownload: (model: Contents.IModel) => void;
   onDelete: (model: Contents.IModel) => void;
 }
@@ -184,6 +186,12 @@ function FileMenu(props: IFileMenuProps) {
     setIsOpen(!isOpen);
   };
 
+  const handleRename = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    props.onRename(props.model);
+    setIsOpen(false);
+  };
+
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     props.onDownload(props.model);
@@ -207,6 +215,9 @@ function FileMenu(props: IFileMenuProps) {
       </button>
       {isOpen && (
         <div className="je-FileMenu-dropdown">
+          <button className="je-FileMenu-item" onClick={handleRename}>
+            Rename
+          </button>
           <button className="je-FileMenu-item" onClick={handleDownload}>
             Download
           </button>
@@ -369,6 +380,45 @@ function FilesApp(props: IFilesAppProps) {
     return '';
   }
 
+  /**
+   * Rename handler: prompts for a new name and performs a contents rename.
+   */
+  const renameFile = React.useCallback(
+    async (model: Contents.IModel) => {
+      try {
+        const result = await openRenameDialog(model.name);
+
+        if (result.button.accept !== true) {
+          return; // cancelled
+        }
+
+        const newName = (result.value?.newName ?? '').trim();
+        const oldName = model.name;
+
+        if (!newName || newName === oldName) {
+          return;
+        }
+        // Can we do better validation than this?
+        if (/[\\/]/.test(newName)) {
+          await showErrorMessage('Invalid name', 'The File name cannot contain "/" or "\\".');
+          return;
+        }
+
+        const dirname = model.path.split('/').slice(0, -1).join('/');
+        const newPath = (dirname ? `${dirname}/` : '') + newName;
+
+        await props.contentsManager.rename(model.path, newPath);
+        await refreshListing();
+      } catch (err) {
+        await showErrorMessage(
+          'Rename failed',
+          `Could not rename ${model.name}: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    },
+    [props.contentsManager, refreshListing]
+  );
+
   return (
     <div className="je-FilesApp">
       <FileUploader
@@ -439,7 +489,12 @@ function FilesApp(props: IFilesAppProps) {
                     data-col-right={isRightColumn ? 'true' : 'false'}
                   >
                     <div className="je-FileTile-box je-FileTile-box-hasMenu">
-                      <FileMenu model={f} onDownload={downloadFile} onDelete={deleteFile} />
+                      <FileMenu
+                        model={f}
+                        onDownload={downloadFile}
+                        onDelete={deleteFile}
+                        onRename={renameFile}
+                      />
                       <fileIcon.react />
                     </div>
                     <div className="je-FileTile-label">{f.name}</div>
