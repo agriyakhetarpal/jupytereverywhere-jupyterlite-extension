@@ -203,7 +203,7 @@ function FileMenu(props: IFileMenuProps) {
         aria-label={`Options for ${props.model.name}`}
         onClick={handleMenuClick}
       >
-        <EverywhereIcons.ellipsis.react />
+        {isOpen ? <EverywhereIcons.dropdownTriangle.react /> : <EverywhereIcons.ellipsis.react />}
       </button>
       {isOpen && (
         <div className="je-FileMenu-dropdown">

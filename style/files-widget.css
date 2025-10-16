@@ -164,6 +164,12 @@ that the dropdown is not clipped by neighbouring tiles. */
   color: #ff8c00;
 }
 
+/* Make the dropdown triangle smaller than the ellipsis. We scale to 75%. */
+.je-FileMenu-trigger svg[data-icon='everywhere:dropdown-triangle'] {
+  width: 16px;
+  height: 16px;
+}
+
 .je-FileMenu-dropdown {
   position: absolute;
   top: 100%;
