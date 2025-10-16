@@ -417,8 +417,14 @@ function FilesApp(props: IFilesAppProps) {
           continue;
         }
 
+        const oldExt = oldName.includes('.') ? oldName.split('.').pop()! : '';
+        let finalName = newName;
+        if (oldExt && !newName.includes('.')) {
+          finalName = `${newName}.${oldExt}`;
+        }
+
         const dirname = model.path.split('/').slice(0, -1).join('/');
-        const newPath = (dirname ? `${dirname}/` : '') + newName;
+        const newPath = (dirname ? `${dirname}/` : '') + finalName;
 
         try {
           await props.contentsManager.rename(model.path, newPath);
