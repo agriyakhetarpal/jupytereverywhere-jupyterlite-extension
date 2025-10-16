@@ -382,38 +382,64 @@ function FilesApp(props: IFilesAppProps) {
 
   /**
    * Rename handler: prompts for a new name and performs a contents rename.
+   * Shows an error dialog if the rename fails, for various reasons:
+   * - the new name is invalid (empty, contains slashes)
+   * - a file with the new name already exists
+   * - the contents manager fails to perform the rename for whatever reason
    */
   const renameFile = React.useCallback(
     async (model: Contents.IModel) => {
-      try {
-        const result = await openRenameDialog(model.name);
+      const oldName = model.name;
+      let attempt = oldName; // this is what we prefill if re-opening the dialog.
 
-        if (result.button.accept !== true) {
-          return; // cancelled
+      // We'll loop until the user cancels, or we complete a valid rename
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const result = await openRenameDialog(attempt);
+
+        if (!result.button.accept) {
+          return;
         }
 
         const newName = (result.value?.newName ?? '').trim();
-        const oldName = model.name;
+        attempt = newName;
 
+        // If there is no change, this is a no-op, so we just quietly return.
         if (!newName || newName === oldName) {
           return;
         }
-        // Can we do better validation than this?
+
         if (/[\\/]/.test(newName)) {
-          await showErrorMessage('Invalid name', 'The File name cannot contain "/" or "\\".');
-          return;
+          await showErrorMessage(
+            'Invalid name',
+            'File name cannot contain “/” or “\\”. Please choose a different name.'
+          );
+          continue;
         }
 
         const dirname = model.path.split('/').slice(0, -1).join('/');
         const newPath = (dirname ? `${dirname}/` : '') + newName;
 
-        await props.contentsManager.rename(model.path, newPath);
-        await refreshListing();
-      } catch (err) {
-        await showErrorMessage(
-          'Rename failed',
-          `Could not rename ${model.name}: ${err instanceof Error ? err.message : String(err)}`
-        );
+        try {
+          await props.contentsManager.rename(model.path, newPath);
+          await refreshListing();
+          return;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+
+          const looksLikeAConflict = /exist|already.*exist|409|conflict/i.test(msg);
+
+          await showErrorMessage(
+            looksLikeAConflict ? 'Name already exists' : 'Rename failed',
+            looksLikeAConflict
+              ? `A file named “${newName}” already exists. Please choose a different name.`
+              : `Could not rename “${oldName}”: ${msg}`
+          );
+
+          // If it was a conflict, we re-open with the same attempt. For
+          // other errors, also re-open to let the user keep trying again.
+          continue;
+        }
       }
     },
     [props.contentsManager, refreshListing]
