@@ -233,27 +233,7 @@ function FilesApp(props: IFilesAppProps) {
   const [uploadingCount, setUploadingCount] = useState(0);
   const fileUploaderRef = useRef<IFileUploaderRef>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const [gridColumns, setGridColumns] = useState(1);
-
-  // Calculate the number of columns in the grid based on the container width.
-  // We use cols = floor((containerWidth + gap) / (tileWidth + gap)), where
-  // the gap is the padding between tiles, and the container width is the
-  // width of the grid container.
-  useEffect(() => {
-    const calculateColumns = () => {
-      if (gridRef.current) {
-        const gridWidth = gridRef.current.offsetWidth;
-        const tileWidth = 100;
-        const gap = 16;
-        const cols = Math.floor((gridWidth + gap) / (tileWidth + gap));
-        setGridColumns(Math.max(1, cols));
-      }
-    };
-
-    calculateColumns();
-    window.addEventListener('resize', calculateColumns);
-    return () => window.removeEventListener('resize', calculateColumns);
-  }, []);
+  const [gridColumns] = useState(1);
 
   const refreshListing = useCallback(async () => {
     try {
