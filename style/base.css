@@ -264,6 +264,11 @@ consistent with code cells */
   font-weight: 600;
 }
 
+.je-KernelSwitcherButton.jp-ToolbarButtonComponent::part(content) {
+  gap: 4px;
+  flex-direction: row-reverse;
+}
+
 .jp-cell-toolbar .jp-ToolbarButtonComponent {
   padding: calc(var(--je-scale) * 4px);
 }
