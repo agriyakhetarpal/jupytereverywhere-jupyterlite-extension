@@ -55,6 +55,20 @@
   border: 0;
 }
 
+.je-DropdownMenu {
+  font-size: calc(var(--je-scale) * 24px);
+  font-weight: 600;
+}
+
+.je-DropdownMenu .lm-Menu-itemLabel {
+  padding: 7px 10px;
+}
+
+.je-DropdownMenu .lm-Menu-itemSubmenuIcon,
+.je-DropdownMenu .lm-Menu-itemIcon {
+  display: none;
+}
+
 .jp-Dialog-content {
   border: 3px solid var(--je-slate-blue);
   border-radius: var(--je-dialog-round-corners);
